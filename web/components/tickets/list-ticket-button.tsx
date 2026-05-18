@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { encodeFunctionData, parseEther, formatEther } from "viem";
+import { encodeFunctionData, parseEther } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { eventTicketNftAbi, TicketMarketplaceAbi } from "@/lib/contracts";
 
@@ -9,11 +9,11 @@ type ListTicketButtonProps = {
   ticketId: string;
   tokenId: number;
   contractAddress: string;
-  tierPrice: string; // Original price in ETH (e.g. "0.05")
+  tierPrice: string;
   tierName: string;
 };
 
-const MAX_MULTIPLIER = 3; // Max 3x original price
+const MAX_MULTIPLIER = 3;
 
 export function ListTicketButton({
   ticketId,
@@ -33,12 +33,12 @@ export function ListTicketButton({
   const originalPrice = parseFloat(tierPrice);
   const maxPrice = originalPrice * MAX_MULTIPLIER;
   const minPrice = 0.001;
-
   const priceNum = parseFloat(priceInput) || 0;
   const isValidPrice = priceNum >= minPrice && priceNum <= maxPrice;
+  const estimatedReceive = ((priceNum * 92.5) / 100).toFixed(4);
 
   function openModal() {
-    setPriceInput((originalPrice * 2).toFixed(4)); // Default: 2x
+    setPriceInput((originalPrice * 2).toFixed(4));
     setError(null);
     setShowModal(true);
   }
@@ -53,10 +53,9 @@ export function ListTicketButton({
       setError("Please connect your wallet.");
       return;
     }
-
     if (!isValidPrice) {
       setError(
-        `Giá phải từ ${minPrice} đến ${maxPrice.toFixed(4)} ETH (tối đa ${MAX_MULTIPLIER}x giá gốc)`,
+        `Price must be between ${minPrice} and ${maxPrice.toFixed(4)} ETH`,
       );
       return;
     }
@@ -68,7 +67,6 @@ export function ListTicketButton({
       const ethereum = (window as any).ethereum;
       if (!ethereum) throw new Error("MetaMask not found");
 
-      // 1. Check & Approve marketplace
       const approved = await publicClient.readContract({
         address: contractAddress as `0x${string}`,
         abi: eventTicketNftAbi,
@@ -82,7 +80,6 @@ export function ListTicketButton({
           functionName: "approve",
           args: [marketplaceAddress as `0x${string}`, BigInt(tokenId)],
         });
-
         const approveHash = await ethereum.request({
           method: "eth_sendTransaction",
           params: [
@@ -94,18 +91,15 @@ export function ListTicketButton({
             },
           ],
         });
-
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
 
-      // 2. List ticket on marketplace
       const priceWei = parseEther(priceInput);
       const listData = encodeFunctionData({
         abi: TicketMarketplaceAbi,
         functionName: "listTicket",
         args: [contractAddress as `0x${string}`, BigInt(tokenId), priceWei],
       });
-
       const listHash = await ethereum.request({
         method: "eth_sendTransaction",
         params: [
@@ -117,17 +111,14 @@ export function ListTicketButton({
           },
         ],
       });
-
       await publicClient.waitForTransactionReceipt({ hash: listHash });
 
-      // 3. Sync with DB
       const res = await fetch("/api/marketplace/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ ticketId, price: priceWei.toString() }),
       });
-
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to sync listing");
@@ -137,9 +128,7 @@ export function ListTicketButton({
       window.location.reload();
     } catch (err) {
       console.error("List ticket error:", err);
-      setError(
-        err instanceof Error ? err.message : "Đã xảy ra lỗi khi rao bán",
-      );
+      setError(err instanceof Error ? err.message : "Failed to list ticket");
     } finally {
       setIsListing(false);
     }
@@ -147,122 +136,93 @@ export function ListTicketButton({
 
   return (
     <>
-      <div style={{ marginTop: "16px" }}>
+      <div style={{ marginTop: "var(--space-lg)" }}>
         <button
-          className="pill-button pill-button-dark"
+          className="btn-secondary"
           onClick={openModal}
           style={{ width: "100%" }}
         >
-          <span className="pill-button-glow" aria-hidden="true" />
-          <span className="pill-button-inner">Rao bán vé này</span>
+          Resale Ticket
         </button>
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div
-          className="modal-overlay"
-          onClick={closeModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            backdropFilter: "blur(4px)",
-          }}
-        >
+        <div className="modal-overlay" onClick={closeModal}>
           <div
-            className="modal-content"
+            className="modal-card"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#111",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "16px",
-              padding: "32px",
-              maxWidth: "420px",
-              width: "90%",
-            }}
+            style={{ maxWidth: "400px" }}
           >
-            <h3
-              style={{
-                margin: "0 0 8px",
-                fontSize: "20px",
-                color: "#fff",
-              }}
-            >
-              Đăng bán vé
-            </h3>
-            <p
-              style={{
-                margin: "0 0 24px",
-                fontSize: "14px",
-                color: "rgba(255,255,255,0.5)",
-              }}
-            >
-              {tierName} Ticket · Token #{tokenId}
-            </p>
+            {/* Header */}
+            <div style={{ marginBottom: "var(--space-xl)" }}>
+              <h3
+                className="text-heading-lg"
+                style={{ color: "var(--color-ink)" }}
+              >
+                Resale Ticket
+              </h3>
+              <p
+                className="text-body-sm"
+                style={{
+                  color: "var(--color-mute)",
+                  marginTop: "var(--space-xxs)",
+                }}
+              >
+                {tierName} · Token #{tokenId}
+              </p>
+            </div>
 
-            {/* Price info */}
+            {/* Price summary */}
             <div
               style={{
-                background: "rgba(255,255,255,0.05)",
-                borderRadius: "12px",
-                padding: "16px",
-                marginBottom: "20px",
+                background: "var(--color-surface-soft)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-lg)",
+                marginBottom: "var(--space-xl)",
               }}
             >
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  marginBottom: "8px",
+                  marginBottom: "var(--space-sm)",
                 }}
               >
                 <span
-                  style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}
+                  className="text-body-sm"
+                  style={{ color: "var(--color-mute)" }}
                 >
-                  Giá gốc
+                  Original price
                 </span>
-                <span style={{ color: "#fff", fontSize: "13px" }}>
+                <span className="text-body-sm-strong">
                   {originalPrice.toFixed(4)} ETH
                 </span>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span
-                  style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}
+                  className="text-body-sm"
+                  style={{ color: "var(--color-mute)" }}
                 >
-                  Giá tối đa ({MAX_MULTIPLIER}x)
+                  Max resale ({MAX_MULTIPLIER}x)
                 </span>
-                <span style={{ color: "#4ade80", fontSize: "13px" }}>
+                <span
+                  className="text-body-sm-strong"
+                  style={{ color: "var(--color-success-deep)" }}
+                >
                   {maxPrice.toFixed(4)} ETH
                 </span>
               </div>
             </div>
 
-            {/* Price input */}
+            {/* Input */}
             <label
-              style={{
-                display: "block",
-                marginBottom: "16px",
-              }}
+              style={{ display: "block", marginBottom: "var(--space-lg)" }}
             >
               <span
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontSize: "14px",
-                  color: "rgba(255,255,255,0.8)",
-                }}
+                className="text-body-sm-strong"
+                style={{ display: "block", marginBottom: "var(--space-sm)" }}
               >
-                Giá bán (ETH)
+                Selling price (ETH)
               </span>
               <input
                 type="number"
@@ -271,88 +231,79 @@ export function ListTicketButton({
                 step="0.001"
                 value={priceInput}
                 onChange={(e) => setPriceInput(e.target.value)}
-                placeholder={`0.001 - ${maxPrice.toFixed(4)}`}
-                style={{
-                  width: "100%",
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.05)",
-                  border: `1px solid ${isValidPrice || !priceInput ? "rgba(255,255,255,0.2)" : "#f87171"}`,
-                  borderRadius: "8px",
-                  color: "#fff",
-                  fontSize: "16px",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
+                placeholder={`${minPrice} – ${maxPrice.toFixed(4)}`}
+                className="input-text"
               />
               {priceInput && !isValidPrice && (
                 <span
+                  className="text-caption-md"
                   style={{
+                    color: "var(--color-error)",
+                    marginTop: "var(--space-xxs)",
                     display: "block",
-                    marginTop: "4px",
-                    fontSize: "12px",
-                    color: "#f87171",
                   }}
                 >
-                  Giá phải từ {minPrice} đến {maxPrice.toFixed(4)} ETH
+                  Must be between {minPrice} and {maxPrice.toFixed(4)} ETH
                 </span>
               )}
             </label>
 
-            {/* Profit estimate */}
+            {/* Estimate */}
             {priceInput && isValidPrice && (
               <div
                 style={{
-                  background: "rgba(74,222,128,0.1)",
-                  border: "1px solid rgba(74,222,128,0.3)",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  marginBottom: "20px",
-                  fontSize: "13px",
-                  color: "#4ade80",
+                  background: "var(--color-success-pale)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "var(--space-md)",
+                  marginBottom: "var(--space-xl)",
                 }}
               >
-                Bạn nhận: ~{((priceNum * 95) / 100).toFixed(4)} ETH (sau 2.5%
-                platform fee + 5% royalty)
+                <span
+                  className="text-body-sm"
+                  style={{ color: "var(--color-success-deep)" }}
+                >
+                  You receive: ~{estimatedReceive} ETH (after 2.5% platform fee
+                  + 5% royalty)
+                </span>
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <p
+              <div
                 style={{
-                  margin: "0 0 16px",
-                  padding: "12px",
-                  background: "rgba(248,113,113,0.1)",
-                  border: "1px solid rgba(248,113,113,0.3)",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  color: "#f87171",
+                  background: "rgba(158,10,10,0.08)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "var(--space-md)",
+                  marginBottom: "var(--space-lg)",
                 }}
               >
-                {error}
-              </p>
+                <span
+                  className="text-body-sm"
+                  style={{ color: "var(--color-error)" }}
+                >
+                  {error}
+                </span>
+              </div>
             )}
 
             {/* Buttons */}
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "var(--space-md)" }}>
               <button
-                className="pill-button pill-button-dark"
+                className="btn-secondary"
                 onClick={closeModal}
                 disabled={isListing}
                 style={{ flex: 1 }}
               >
-                <span className="pill-button-inner">Huỷ</span>
+                Cancel
               </button>
               <button
-                className="pill-button pill-button-light"
+                className="btn-primary"
                 onClick={handleConfirm}
                 disabled={isListing || !isValidPrice}
                 style={{ flex: 1 }}
               >
-                <span className="pill-button-glow" aria-hidden="true" />
-                <span className="pill-button-inner">
-                  {isListing ? "Đang xử lý..." : "Xác nhận"}
-                </span>
+                {isListing ? "Processing..." : "Confirm"}
               </button>
             </div>
           </div>

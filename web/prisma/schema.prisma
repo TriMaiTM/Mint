@@ -69,6 +69,7 @@ model Event {
   contractAddress String?     @unique
   title           String
   description     String?
+  category        String?     @default("General")
   venue           String?
   bannerImage     String?
   startDate       DateTime

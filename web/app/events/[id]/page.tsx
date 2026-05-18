@@ -1,13 +1,32 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BuyTicketButton } from "@/components/tickets/buy-ticket-button";
 import { prisma } from "@/lib/prisma";
+import { formatEther } from "viem";
+import { Nav } from "@/components/layout/nav";
+import { BuyTicketButton } from "@/components/tickets/buy-ticket-button";
 
 type EventDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function EventDetailPage({ params }: EventDetailPageProps) {
+function formatDate(value: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(value);
+}
+
+function formatAddress(addr: string): string {
+  return `${addr.substring(0, 6)}...${addr.substring(38)}`;
+}
+
+export default async function EventDetailPage({
+  params,
+}: EventDetailPageProps) {
   const { id } = await params;
 
   const event = await prisma.event.findUnique({
@@ -16,6 +35,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       organizer: {
         select: {
           walletAddress: true,
+          name: true,
         },
       },
       ticketTiers: {
@@ -28,88 +48,206 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     notFound();
   }
 
+  const remainingTiers = event.ticketTiers.map((tier) => ({
+    ...tier,
+    remaining: tier.maxQuantity - tier.soldCount,
+  }));
+
   return (
-    <section className="events-root">
-      <video
-        className="hero-video"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-      <div className="hero-overlay" />
+    <>
+      {/* ── Sticky Navigation ── */}
+      <Nav />
 
-      <div className="hero-content-layer">
-        <nav className="hero-navbar" aria-label="Primary">
-          <Link href="/" className="hero-logo" aria-label="Homepage">
-            LOGOIPSUM
-          </Link>
-          <Link href="/events" className="pill-button pill-button-dark">
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">Back to Events</span>
-          </Link>
-        </nav>
+      <main className="container section-gap">
+        {/* ── Hero Banner ── */}
+        {event.bannerImage && (
+          <div className="event-card-image mb-xl">
+            <img src={event.bannerImage} alt={event.title} />
+          </div>
+        )}
 
-        <main className="events-main">
-          <header className="events-header">
-            <p className="events-eyebrow">Event Detail</p>
-            <h1 className="events-title">{event.title}</h1>
-            <p className="events-subtitle">
-              {event.description ?? "Organizer will update event detail soon."}
+        {/* ── Event Info ── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 320px",
+            gap: "var(--space-xxl)",
+            alignItems: "start",
+          }}
+        >
+          <div>
+            <p className="event-card-date">{formatDate(event.startDate)}</p>
+            <h1 className="text-heading-xl mt-sm">{event.title}</h1>
+
+            {event.venue && (
+              <p className="text-body-md text-muted mt-sm">📍 {event.venue}</p>
+            )}
+
+            <p
+              className="text-body-md mt-lg"
+              style={{ color: "var(--color-body)", lineHeight: 1.6 }}
+            >
+              {event.description ??
+                "The organizer will update event details soon."}
             </p>
-            {!event.contractAddress ? (
-              <p className="buy-ticket-message err">
-                Event is waiting for organizer to publish on-chain before tickets can be bought.
-              </p>
-            ) : null}
-          </header>
 
-          {event.bannerImage && (
-            <div style={{ width: "100%", height: "300px", overflow: "hidden", borderRadius: "16px", marginBottom: "32px", marginTop: "16px" }}>
-              <img src={event.bannerImage} alt={event.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            {/* ── Organizer Info ── */}
+            <div className="card-feature-soft mt-xl">
+              <p
+                className="text-caption-md text-muted"
+                style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+              >
+                Organized by
+              </p>
+              <p className="text-body-strong mt-sm">
+                {event.organizer.name ?? "Event Organizer"}
+              </p>
+              <p
+                className="text-body-sm text-muted mt-sm"
+                style={{ fontFamily: "monospace" }}
+              >
+                {formatAddress(event.organizer.walletAddress)}
+              </p>
+            </div>
+
+            {/* ── Contract Notice ── */}
+            {!event.contractAddress && (
+              <div
+                className="mt-xl"
+                style={{
+                  padding: "var(--space-lg)",
+                  backgroundColor: "var(--color-surface-card)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-hairline)",
+                }}
+              >
+                <p
+                  className="text-body-sm"
+                  style={{ color: "var(--color-error)" }}
+                >
+                  ⏳ Tickets will be available once the organizer publishes the
+                  event on-chain.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Sidebar ── */}
+          <aside>
+            <div className="card-feature-soft">
+              <p
+                className="text-caption-md text-muted"
+                style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+              >
+                Chain
+              </p>
+              <p className="text-body-strong mt-sm">
+                {event.chainId ?? "Unknown"}
+              </p>
+              <div
+                style={{
+                  height: "1px",
+                  backgroundColor: "var(--color-hairline)",
+                  margin: "var(--space-lg) 0",
+                }}
+              />
+              <p
+                className="text-caption-md text-muted"
+                style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+              >
+                Ticket Tiers
+              </p>
+              <p className="text-heading-lg mt-sm">
+                {event.ticketTiers.length}
+              </p>
+            </div>
+          </aside>
+        </div>
+
+        {/* ── Ticket Tiers ── */}
+        <section style={{ marginTop: "var(--space-section)" }}>
+          <h2 className="text-heading-lg mb-xl">Available Tickets</h2>
+
+          {event.contractAddress ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "var(--space-lg)",
+              }}
+            >
+              {remainingTiers.map((tier) => (
+                <div className="tier-card" key={tier.id}>
+                  <p className="tier-card-name">{tier.name}</p>
+                  <p className="tier-card-price">
+                    {Number(tier.price).toFixed(3)} POL
+                  </p>
+                  <p className="tier-card-benefits">
+                    {tier.benefits ?? "Standard event access"}
+                  </p>
+                  <p className="tier-card-stock">
+                    {tier.remaining > 0
+                      ? `${tier.remaining} of ${tier.maxQuantity} remaining`
+                      : "Sold out"}
+                  </p>
+                  <div style={{ marginTop: "var(--space-lg)" }}>
+                    <BuyTicketButton
+                      tierId={tier.id}
+                      tierName={tier.name}
+                      tierPrice={tier.price.toString()}
+                      onchainTierId={tier.onchainTierId}
+                      eventContractAddress={event.contractAddress}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="card-feature-soft text-center"
+              style={{ padding: "var(--space-xxl)" }}
+            >
+              <p className="text-body-md text-muted">
+                Ticket tiers will appear here once the event is deployed
+                on-chain.
+              </p>
             </div>
           )}
+        </section>
+      </main>
 
-          <div className="events-grid">
-            {event.ticketTiers.map((tier) => (
-              <article className="event-card" key={tier.id}>
-                <div className="event-card-top">
-                  <span className="event-status">{tier.name}</span>
-                  <span className="event-chain">{event.chainId ?? "Unknown chain"}</span>
-                </div>
-                <h3 className="event-title">{tier.name} Ticket</h3>
-                <p className="event-description">{tier.benefits ?? "Standard access"}</p>
-                <div className="event-meta-grid">
-                  <div>
-                    <p className="event-meta-label">Price</p>
-                    <p className="event-meta-value">{Number(tier.price).toFixed(3)} POL</p>
-                  </div>
-                  <div>
-                    <p className="event-meta-label">Quantity</p>
-                    <p className="event-meta-value">{tier.maxQuantity}</p>
-                  </div>
-                  <div>
-                    <p className="event-meta-label">Sold</p>
-                    <p className="event-meta-value">{tier.soldCount}</p>
-                  </div>
-                  <div>
-                    <p className="event-meta-label">Venue</p>
-                    <p className="event-meta-value">{event.venue ?? "TBA"}</p>
-                  </div>
-                </div>
-                <BuyTicketButton
-                  tierId={tier.id}
-                  tierName={tier.name}
-                  tierPrice={tier.price.toString()}
-                  onchainTierId={tier.onchainTierId}
-                  eventContractAddress={event.contractAddress}
-                />
-              </article>
-            ))}
+      {/* ── Footer ── */}
+      <footer className="footer" style={{ marginTop: "var(--space-section)" }}>
+        <div className="footer-grid">
+          <div>
+            <p className="footer-col-header">TicketNFT</p>
+            <p className="text-body-sm text-muted">
+              NFT-based event ticketing on Polygon.
+            </p>
           </div>
-        </main>
-      </div>
-    </section>
+          <div>
+            <p className="footer-col-header">Explore</p>
+            <Link href="/events" className="footer-link">
+              Events
+            </Link>
+            <Link href="/marketplace" className="footer-link">
+              Marketplace
+            </Link>
+          </div>
+          <div>
+            <p className="footer-col-header">Account</p>
+            <Link href="/my-tickets" className="footer-link">
+              My Tickets
+            </Link>
+          </div>
+          <div>
+            <p className="footer-col-header">Info</p>
+            <p className="text-body-sm text-muted">
+              Built with smart contracts for transparent, verifiable tickets.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }

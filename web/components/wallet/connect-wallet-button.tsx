@@ -40,13 +40,8 @@ export function ConnectWalletButton() {
 
           if (!ready || isLoadingSession) {
             return (
-              <button
-                className="pill-button pill-button-dark"
-                type="button"
-                disabled
-              >
-                <span className="pill-button-glow" aria-hidden="true" />
-                <span className="pill-button-inner">Loading...</span>
+              <button className="btn-secondary" type="button" disabled>
+                Loading...
               </button>
             );
           }
@@ -54,12 +49,11 @@ export function ConnectWalletButton() {
           if (!connected) {
             return (
               <button
-                className="pill-button pill-button-dark"
+                className="btn-secondary"
                 onClick={openConnectModal}
                 type="button"
               >
-                <span className="pill-button-glow" aria-hidden="true" />
-                <span className="pill-button-inner">Connect Wallet</span>
+                Connect Wallet
               </button>
             );
           }
@@ -67,12 +61,11 @@ export function ConnectWalletButton() {
           if (chain.unsupported) {
             return (
               <button
-                className="pill-button pill-button-dark"
+                className="btn-secondary"
                 onClick={openChainModal}
                 type="button"
               >
-                <span className="pill-button-glow" aria-hidden="true" />
-                <span className="pill-button-inner">Wrong Network</span>
+                Wrong Network
               </button>
             );
           }
@@ -83,26 +76,22 @@ export function ConnectWalletButton() {
           ) {
             return (
               <button
-                className="pill-button pill-button-dark"
+                className="btn-secondary"
                 onClick={handleSignIn}
                 type="button"
               >
-                <span className="pill-button-glow" aria-hidden="true" />
-                <span className="pill-button-inner">
-                  {isSigningIn ? "Signing In..." : "Sign In Wallet"}
-                </span>
+                {isSigningIn ? "Signing In..." : "Sign In Wallet"}
               </button>
             );
           }
 
           return (
             <button
-              className="pill-button pill-button-dark"
+              className="btn-secondary"
               onClick={openAccountModal}
               type="button"
             >
-              <span className="pill-button-glow" aria-hidden="true" />
-              <span className="pill-button-inner">{account.displayName}</span>
+              {account.displayName}
             </button>
           );
         }}

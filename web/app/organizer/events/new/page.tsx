@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletAuth } from "@/hooks/use-wallet-auth";
+import { Nav } from "@/components/layout/nav";
 
 type TierForm = {
   name: string;
@@ -47,7 +48,7 @@ export default function OrganizerCreateEventPage() {
 
   const isOrganizer = useMemo(
     () => user?.role === "ORGANIZER" || user?.role === "ADMIN",
-    [user?.role]
+    [user?.role],
   );
 
   const [form, setForm] = useState<CreatePayload>({
@@ -68,7 +69,7 @@ export default function OrganizerCreateEventPage() {
     setForm((value) => ({
       ...value,
       tiers: value.tiers.map((tier, tierIndex) =>
-        tierIndex === index ? { ...tier, ...patch } : tier
+        tierIndex === index ? { ...tier, ...patch } : tier,
       ),
     }));
   }
@@ -114,11 +115,12 @@ export default function OrganizerCreateEventPage() {
         throw new Error(payload.error ?? "Failed to create event");
       }
 
-      setMessage("Event created. Publish it on-chain from My Events when ready.");
+      setMessage("Event created successfully!");
       router.push(`/events/${payload.data.id}`);
       router.refresh();
     } catch (error) {
-      const text = error instanceof Error ? error.message : "Failed to create event";
+      const text =
+        error instanceof Error ? error.message : "Failed to create event";
       setIsError(true);
       setMessage(text);
     } finally {
@@ -126,270 +128,425 @@ export default function OrganizerCreateEventPage() {
     }
   }
 
+  /* ── Shared nav ── */
+  const nav = <Nav />;
+
+  /* ── Loading state ── */
   if (isLoadingSession) {
     return (
-      <section className="events-root">
-        <video
-          className="hero-video"
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-        <div className="hero-overlay" />
-        <div className="hero-content-layer">
-          <main className="events-main">
-            <div className="events-empty">
-              <p>Loading wallet session...</p>
-            </div>
-          </main>
-        </div>
-      </section>
+      <>
+        {nav}
+        <main className="container section-gap" style={{ textAlign: "center" }}>
+          <p className="text-body-md text-muted">Loading wallet session...</p>
+        </main>
+      </>
     );
   }
 
+  /* ── Not authenticated ── */
   if (!isAuthenticated) {
     return (
-      <section className="events-root">
-        <video
-          className="hero-video"
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-        <div className="hero-overlay" />
-        <div className="hero-content-layer">
-          <main className="events-main">
-            <div className="events-empty">
-              <p>Please connect and sign in wallet first.</p>
-              <p>
-                <Link href="/" className="event-inline-link">
-                  Go back home
-                </Link>
-              </p>
-            </div>
-          </main>
-        </div>
-      </section>
+      <>
+        {nav}
+        <main className="container section-gap" style={{ textAlign: "center" }}>
+          <h1 className="text-heading-xl mb-md">Create Event</h1>
+          <p className="text-body-md text-muted mb-lg">
+            Please connect and sign in with your wallet first.
+          </p>
+          <Link href="/" className="btn-secondary">
+            Back to Home
+          </Link>
+        </main>
+      </>
     );
   }
 
+  /* ── Not organizer ── */
   if (!isOrganizer) {
     return (
-      <section className="events-root">
-        <video
-          className="hero-video"
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-        <div className="hero-overlay" />
-        <div className="hero-content-layer">
-          <main className="events-main">
-            <div className="events-empty">
-              <p>This account is not Organizer.</p>
-              <p>
-                Browse events in <Link href="/events" className="event-inline-link">Ticket Store</Link>.
-              </p>
-            </div>
-          </main>
-        </div>
-      </section>
+      <>
+        {nav}
+        <main className="container section-gap" style={{ textAlign: "center" }}>
+          <h1 className="text-heading-xl mb-md">Access Denied</h1>
+          <p className="text-body-md text-muted mb-lg">
+            This account does not have organizer permission.
+          </p>
+          <Link href="/events" className="btn-secondary">
+            Browse Events
+          </Link>
+        </main>
+      </>
     );
   }
 
+  /* ── Main form ── */
   return (
-    <section className="events-root">
-      <video
-        className="hero-video"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-      <div className="hero-overlay" />
+    <>
+      {nav}
 
-      <div className="hero-content-layer">
-        <nav className="hero-navbar" aria-label="Primary">
-          <Link href="/" className="hero-logo" aria-label="Homepage">
-            LOGOIPSUM
-          </Link>
-          <Link href="/organizer/events" className="pill-button pill-button-dark">
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">My Events</span>
-          </Link>
-        </nav>
+      <main className="container section-gap" style={{ maxWidth: "720px" }}>
+        <header style={{ marginBottom: "var(--space-xxl)" }}>
+          <h1 className="text-display-lg">Create Event</h1>
+          <p className="text-body-md text-muted mt-sm">
+            Define event info and ticket tiers in draft mode, then publish the
+            NFT sale on-chain from My Events.
+          </p>
+        </header>
 
-        <main className="events-main">
-          <header className="events-header">
-            <p className="events-eyebrow">Organizer Studio</p>
-            <h1 className="events-title">Create Event</h1>
-            <p className="events-subtitle">
-              Define event info and all ticket tiers in draft mode, then publish the NFT sale on-chain from My Events.
-            </p>
-          </header>
+        <form onSubmit={onSubmit}>
+          {/* ── Event Details Card ── */}
+          <div
+            className="card-feature"
+            style={{ marginBottom: "var(--space-xl)" }}
+          >
+            <h2 className="text-heading-lg mb-lg">Event Details</h2>
 
-          <form className="event-create-form" onSubmit={onSubmit}>
-            <label>
-              <span>Event title</span>
-              <input
-                value={form.title}
-                onChange={(e) => setForm((v) => ({ ...v, title: e.target.value }))}
-                required
-              />
-            </label>
-
-            <label>
-              <span>Description</span>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((v) => ({ ...v, description: e.target.value }))}
-                rows={3}
-              />
-            </label>
-
-            <label>
-              <span>Venue</span>
-              <input
-                value={form.venue}
-                onChange={(e) => setForm((v) => ({ ...v, venue: e.target.value }))}
-              />
-            </label>
-
-            <label>
-              <span>Banner Image URL (optional)</span>
-              <input
-                value={form.bannerImage}
-                onChange={(e) => setForm((v) => ({ ...v, bannerImage: e.target.value }))}
-                placeholder="https://example.com/banner.jpg"
-              />
-            </label>
-
-            <div className="event-form-grid">
-              <label>
-                <span>Start date/time</span>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-lg)",
+              }}
+            >
+              <div>
+                <label
+                  className="text-body-strong"
+                  style={{ display: "block", marginBottom: "var(--space-xs)" }}
+                  htmlFor="title"
+                >
+                  Event title
+                </label>
                 <input
-                  type="datetime-local"
-                  value={form.startDate}
-                  onChange={(e) => setForm((v) => ({ ...v, startDate: e.target.value }))}
+                  id="title"
+                  className="input-text"
+                  value={form.title}
+                  onChange={(e) =>
+                    setForm((v) => ({ ...v, title: e.target.value }))
+                  }
+                  placeholder="My Awesome Event"
                   required
                 />
-              </label>
-              <label>
-                <span>End date/time</span>
-                <input
-                  type="datetime-local"
-                  value={form.endDate}
-                  onChange={(e) => setForm((v) => ({ ...v, endDate: e.target.value }))}
-                  required
+              </div>
+
+              <div>
+                <label
+                  className="text-body-strong"
+                  style={{ display: "block", marginBottom: "var(--space-xs)" }}
+                  htmlFor="description"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  className="input-text"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((v) => ({ ...v, description: e.target.value }))
+                  }
+                  placeholder="Tell attendees what to expect..."
+                  rows={4}
+                  style={{ height: "auto", resize: "vertical" }}
                 />
-              </label>
-            </div>
+              </div>
 
-            <label>
-              <span>Max attendees</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={form.maxAttendees}
-                onChange={(e) => setForm((v) => ({ ...v, maxAttendees: Number(e.target.value) }))}
-              />
-            </label>
+              <div>
+                <label
+                  className="text-body-strong"
+                  style={{ display: "block", marginBottom: "var(--space-xs)" }}
+                  htmlFor="venue"
+                >
+                  Venue
+                </label>
+                <input
+                  id="venue"
+                  className="input-text"
+                  value={form.venue}
+                  onChange={(e) =>
+                    setForm((v) => ({ ...v, venue: e.target.value }))
+                  }
+                  placeholder="Convention Center, Ho Chi Minh City"
+                />
+              </div>
 
-            <div className="event-form-grid">
-              <p className="event-meta-label">Ticket tiers</p>
-              <button
-                className="pill-button pill-button-dark"
-                type="button"
-                onClick={addTier}
+              <div>
+                <label
+                  className="text-body-strong"
+                  style={{ display: "block", marginBottom: "var(--space-xs)" }}
+                  htmlFor="bannerImage"
+                >
+                  Banner Image URL{" "}
+                  <span className="text-body-sm text-muted">(optional)</span>
+                </label>
+                <input
+                  id="bannerImage"
+                  className="input-text"
+                  value={form.bannerImage}
+                  onChange={(e) =>
+                    setForm((v) => ({ ...v, bannerImage: e.target.value }))
+                  }
+                  placeholder="https://example.com/banner.jpg"
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "var(--space-lg)",
+                }}
               >
-                <span className="pill-button-glow" aria-hidden="true" />
-                <span className="pill-button-inner">Add Tier</span>
-              </button>
-            </div>
+                <div>
+                  <label
+                    className="text-body-strong"
+                    style={{
+                      display: "block",
+                      marginBottom: "var(--space-xs)",
+                    }}
+                    htmlFor="startDate"
+                  >
+                    Start date/time
+                  </label>
+                  <input
+                    id="startDate"
+                    type="datetime-local"
+                    className="input-text"
+                    value={form.startDate}
+                    onChange={(e) =>
+                      setForm((v) => ({ ...v, startDate: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    className="text-body-strong"
+                    style={{
+                      display: "block",
+                      marginBottom: "var(--space-xs)",
+                    }}
+                    htmlFor="endDate"
+                  >
+                    End date/time
+                  </label>
+                  <input
+                    id="endDate"
+                    type="datetime-local"
+                    className="input-text"
+                    value={form.endDate}
+                    onChange={(e) =>
+                      setForm((v) => ({ ...v, endDate: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
 
+              <div>
+                <label
+                  className="text-body-strong"
+                  style={{ display: "block", marginBottom: "var(--space-xs)" }}
+                  htmlFor="maxAttendees"
+                >
+                  Max attendees
+                </label>
+                <input
+                  id="maxAttendees"
+                  type="number"
+                  className="input-text"
+                  min="1"
+                  step="1"
+                  value={form.maxAttendees}
+                  onChange={(e) =>
+                    setForm((v) => ({
+                      ...v,
+                      maxAttendees: Number(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Ticket Tiers Section ── */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "var(--space-lg)",
+            }}
+          >
+            <h2 className="text-heading-lg">Ticket Tiers</h2>
+            <button className="btn-secondary" type="button" onClick={addTier}>
+              + Add Tier
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-lg)",
+            }}
+          >
             {form.tiers.map((tier, index) => (
-              <div className="event-card" key={`tier-${index}`}>
-                <div className="event-card-top">
-                  <span className="event-status">Tier {index + 1}</span>
+              <div className="card-feature-soft" key={`tier-${index}`}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "var(--space-lg)",
+                  }}
+                >
+                  <span className="chip">Tier {index + 1}</span>
                   {form.tiers.length > 1 ? (
                     <button
-                      className="pill-button pill-button-dark"
+                      className="btn-tertiary"
                       type="button"
                       onClick={() => removeTier(index)}
+                      style={{ color: "var(--color-error)" }}
                     >
-                      <span className="pill-button-inner">Remove</span>
+                      Remove
                     </button>
                   ) : (
-                    <span className="event-chain">Required</span>
+                    <span className="text-body-sm text-muted">Required</span>
                   )}
                 </div>
 
-                <div className="event-form-grid">
-                  <label>
-                    <span>Tier name</span>
-                    <input
-                      value={tier.name}
-                      onChange={(e) => updateTier(index, { name: e.target.value })}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>Price (POL)</span>
-                    <input
-                      type="number"
-                      min="0.000001"
-                      step="0.000001"
-                      value={tier.price}
-                      onChange={(e) => updateTier(index, { price: e.target.value })}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>Ticket quantity</span>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={tier.maxQuantity}
-                      onChange={(e) => updateTier(index, { maxQuantity: Number(e.target.value) })}
-                      required
-                    />
-                  </label>
-                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-md)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: "var(--space-md)",
+                    }}
+                  >
+                    <div>
+                      <label
+                        className="text-body-sm-strong"
+                        style={{
+                          display: "block",
+                          marginBottom: "var(--space-xs)",
+                        }}
+                      >
+                        Tier name
+                      </label>
+                      <input
+                        className="input-text"
+                        value={tier.name}
+                        onChange={(e) =>
+                          updateTier(index, { name: e.target.value })
+                        }
+                        placeholder="VIP, Early Bird..."
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className="text-body-sm-strong"
+                        style={{
+                          display: "block",
+                          marginBottom: "var(--space-xs)",
+                        }}
+                      >
+                        Price (POL)
+                      </label>
+                      <input
+                        type="number"
+                        className="input-text"
+                        min="0.000001"
+                        step="0.000001"
+                        value={tier.price}
+                        onChange={(e) =>
+                          updateTier(index, { price: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className="text-body-sm-strong"
+                        style={{
+                          display: "block",
+                          marginBottom: "var(--space-xs)",
+                        }}
+                      >
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        className="input-text"
+                        min="1"
+                        step="1"
+                        value={tier.maxQuantity}
+                        onChange={(e) =>
+                          updateTier(index, {
+                            maxQuantity: Number(e.target.value),
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
 
-                <label>
-                  <span>Tier benefits</span>
-                  <input
-                    value={tier.benefits}
-                    onChange={(e) => updateTier(index, { benefits: e.target.value })}
-                  />
-                </label>
+                  <div>
+                    <label
+                      className="text-body-sm-strong"
+                      style={{
+                        display: "block",
+                        marginBottom: "var(--space-xs)",
+                      }}
+                    >
+                      Benefits
+                    </label>
+                    <input
+                      className="input-text"
+                      value={tier.benefits}
+                      onChange={(e) =>
+                        updateTier(index, { benefits: e.target.value })
+                      }
+                      placeholder="Backstage access, free drinks..."
+                    />
+                  </div>
+                </div>
               </div>
             ))}
+          </div>
 
-            <button className="pill-button pill-button-light" type="submit" disabled={isSubmitting}>
-              <span className="pill-button-glow" aria-hidden="true" />
-              <span className="pill-button-inner">
-                {isSubmitting ? "Creating..." : "Create Event"}
-              </span>
+          {/* ── Submit ── */}
+          <div style={{ marginTop: "var(--space-xxl)" }}>
+            <button
+              className="btn-primary"
+              type="submit"
+              disabled={isSubmitting}
+              style={{ width: "100%", height: "48px" }}
+            >
+              {isSubmitting ? "Creating..." : "Create Event"}
             </button>
 
-            {message ? (
-              <p className={isError ? "buy-ticket-message err" : "buy-ticket-message ok"}>
+            {message && (
+              <p
+                className="text-body-md mt-md"
+                style={{
+                  textAlign: "center",
+                  color: isError
+                    ? "var(--color-error)"
+                    : "var(--color-success-deep)",
+                }}
+              >
                 {message}
               </p>
-            ) : null}
-          </form>
-        </main>
-      </div>
-    </section>
+            )}
+          </div>
+        </form>
+      </main>
+    </>
   );
 }

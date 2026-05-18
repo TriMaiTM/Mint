@@ -42,46 +42,77 @@ export function EventCard({
   ticketSummary,
 }: EventCardProps) {
   return (
-    <article className="event-card">
+    <article className="card">
       {bannerImage && (
-        <div style={{ width: "100%", height: "160px", overflow: "hidden", borderRadius: "12px", marginBottom: "16px" }}>
-          <img src={bannerImage} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div
+          style={{
+            width: "100%",
+            height: "160px",
+            overflow: "hidden",
+            borderRadius: "var(--radius-md)",
+            marginBottom: "var(--space-4)",
+          }}
+        >
+          <img
+            src={bannerImage}
+            alt={title}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
         </div>
       )}
-      <div className="event-card-top">
-        <span className="event-status">{status}</span>
-        <span className="event-chain">{chainId ?? "Unknown chain"}</span>
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--space-2)",
+          flexWrap: "wrap",
+          marginBottom: "var(--space-3)",
+        }}
+      >
+        <span className="chip">{status}</span>
+        <span className="chip">{chainId ?? "Unknown chain"}</span>
       </div>
 
-      <h3 className="event-title">{title}</h3>
-      <p className="event-description">
-        {description ?? "No description yet. Organizer will publish details soon."}
+      <h3 className="text-heading-md">{title}</h3>
+      <p className="text-body-sm text-muted">
+        {description ??
+          "No description yet. Organizer will publish details soon."}
       </p>
 
-      <div className="event-meta-grid">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "var(--space-3)",
+          marginTop: "var(--space-3)",
+        }}
+      >
         <div>
-          <p className="event-meta-label">Venue</p>
-          <p className="event-meta-value">{venue ?? "TBA"}</p>
+          <p className="text-caption-md text-muted">Venue</p>
+          <p className="text-body-sm">{venue ?? "TBA"}</p>
         </div>
         <div>
-          <p className="event-meta-label">Start</p>
-          <p className="event-meta-value">{formatDate(startDate)}</p>
+          <p className="text-caption-md text-muted">Start</p>
+          <p className="text-body-sm">{formatDate(startDate)}</p>
         </div>
         <div>
-          <p className="event-meta-label">Tickets</p>
-          <p className="event-meta-value">{ticketSummary.totalQuantity}</p>
+          <p className="text-caption-md text-muted">Tickets</p>
+          <p className="text-body-sm">{ticketSummary.totalQuantity}</p>
         </div>
         <div>
-          <p className="event-meta-label">Price Range</p>
-          <p className="event-meta-value">
-            {formatPrice(ticketSummary.minPrice)} - {formatPrice(ticketSummary.maxPrice)}
+          <p className="text-caption-md text-muted">Price Range</p>
+          <p className="text-body-sm">
+            {formatPrice(ticketSummary.minPrice)} -{" "}
+            {formatPrice(ticketSummary.maxPrice)}
           </p>
         </div>
       </div>
 
-      <Link href={`/events/${id}`} className="pill-button pill-button-light event-card-cta">
-        <span className="pill-button-glow" aria-hidden="true" />
-        <span className="pill-button-inner">View Tickets</span>
+      <Link
+        href={`/events/${id}`}
+        className="btn-primary"
+        style={{ marginTop: "var(--space-3)" }}
+      >
+        View Tickets
       </Link>
     </article>
   );

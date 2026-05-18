@@ -86,28 +86,29 @@ export function PublishEventButton({
   }
 
   return (
-    <div className="buy-ticket-wrap">
+    <div>
       <button
-        className="pill-button pill-button-light event-card-cta"
+        className="btn-primary"
         onClick={handlePublish}
         type="button"
         disabled={isPublishing || !!contractAddress}
+        style={{ width: "100%" }}
       >
-        <span className="pill-button-glow" aria-hidden="true" />
-        <span className="pill-button-inner">
-          {isPublishing
-            ? "Đang publish..."
-            : contractAddress
-              ? "Đã publish"
-              : "Publish On-chain"}
-        </span>
+        {isPublishing
+          ? "Đang publish..."
+          : contractAddress
+            ? "Đã publish"
+            : "Publish On-chain"}
       </button>
 
       {message ? (
         <p
-          className={
-            isSuccess ? "buy-ticket-message ok" : "buy-ticket-message err"
-          }
+          style={{
+            marginTop: "var(--space-3)",
+            color: isSuccess
+              ? "var(--color-success-deep)"
+              : "var(--color-error)",
+          }}
         >
           {message}
         </p>

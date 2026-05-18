@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { Nav } from "@/components/layout/nav";
 import { TicketQR } from "@/components/tickets/ticket-qr";
 import { ListTicketButton } from "@/components/tickets/list-ticket-button";
 
@@ -17,31 +18,35 @@ export default async function MyTicketsPage() {
   const token = cookieStore.get(getSessionCookieName())?.value;
   const session = verifySessionToken(token);
 
+  /* ── Sign-in required ── */
   if (!session) {
     return (
-      <section className="events-root">
-        <video
-          className="hero-video"
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-        <div className="hero-overlay" />
-        <div className="hero-content-layer">
-          <main className="events-main">
-            <div className="events-empty">
-              <p>Please sign in with wallet to view your tickets.</p>
-              <p>
-                <Link href="/" className="event-inline-link">
-                  Go back to home
-                </Link>
-              </p>
-            </div>
-          </main>
-        </div>
-      </section>
+      <>
+        <Nav />
+
+        <main className="container section-gap">
+          <div
+            className="card-feature-soft text-center"
+            style={{
+              maxWidth: 480,
+              margin: "0 auto",
+              padding: "var(--space-xxl)",
+            }}
+          >
+            <h1 className="text-heading-lg">Sign in required</h1>
+            <p className="text-body-md text-muted mt-md">
+              Please connect your wallet and sign in to view your tickets.
+            </p>
+            <Link
+              href="/"
+              className="btn-primary mt-lg"
+              style={{ display: "inline-flex" }}
+            >
+              Go to Homepage
+            </Link>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -55,6 +60,7 @@ export default async function MyTicketsPage() {
           startDate: true,
           chainId: true,
           contractAddress: true,
+          bannerImage: true,
         },
       },
       tier: {
@@ -74,145 +80,220 @@ export default async function MyTicketsPage() {
   });
 
   return (
-    <section className="events-root">
-      <video
-        suppressHydrationWarning
-        className="hero-video"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-      <div className="hero-overlay" />
+    <>
+      {/* ── Sticky Navigation ── */}
+      <Nav />
 
-      <div className="hero-content-layer">
-        <nav className="hero-navbar" aria-label="Primary">
-          <Link href="/" className="hero-logo" aria-label="Homepage">
-            LOGOIPSUM
-          </Link>
-          <Link href="/events" className="pill-button pill-button-dark">
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">Browse Events</span>
-          </Link>
-        </nav>
+      <main className="container section-gap">
+        {/* ── Header ── */}
+        <header className="mb-xl">
+          <h1 className="text-display-lg">My Tickets</h1>
+          <p className="text-body-md text-muted mt-sm">
+            View and manage all your NFT event tickets in one place.
+          </p>
+        </header>
 
-        <main className="events-main">
-          <header className="events-header">
-            <p className="events-eyebrow">Wallet Inventory</p>
-            <h1 className="events-title">My NFT Tickets</h1>
-            <p className="events-subtitle">
-              Track every ticket in your wallet, including token ID and event
-              schedule.
+        {tickets.length === 0 ? (
+          /* ── Empty State ── */
+          <div
+            className="card-feature-soft text-center"
+            style={{ padding: "var(--space-xxl) var(--space-xl)" }}
+          >
+            <p className="text-heading-md">No tickets yet</p>
+            <p className="text-body-md text-muted mt-md">
+              You haven&apos;t purchased any tickets yet. Browse events to get
+              started.
             </p>
-          </header>
+            <Link
+              href="/events"
+              className="btn-primary mt-lg"
+              style={{ display: "inline-flex" }}
+            >
+              Browse Events
+            </Link>
+          </div>
+        ) : (
+          /* ── Tickets Grid ── */
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: "var(--space-lg)",
+            }}
+          >
+            {tickets.map((ticket) => {
+              const isListed = ticket.status === "LISTED";
+              const isUsed = ticket.isUsed;
 
-          {tickets.length === 0 ? (
-            <div className="events-empty">
-              <p>You do not own any tickets yet.</p>
-              <p>
-                Start from{" "}
-                <Link href="/events" className="event-inline-link">
-                  Browse Events
-                </Link>
-                .
-              </p>
-            </div>
-          ) : (
-            <div className="events-grid">
-              {tickets.map((ticket) => (
-                <article className="event-card" key={ticket.id}>
-                  <div className="event-card-top">
-                    <span className="event-status">
-                      {ticket.status === "LISTED"
-                        ? "ĐANG RAO BÁN"
-                        : ticket.status}
-                    </span>
-                    <span className="event-chain">Token #{ticket.tokenId}</span>
-                  </div>
-
-                  <h3 className="event-title">{ticket.event.title}</h3>
-                  <p className="event-description">
-                    Tier: {ticket.tier.name} ·{" "}
-                    {Number(ticket.tier.price).toFixed(3)} POL
-                  </p>
-
-                  <div className="event-meta-grid">
-                    <div>
-                      <p className="event-meta-label">Venue</p>
-                      <p className="event-meta-value">
-                        {ticket.event.venue ?? "TBA"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="event-meta-label">Start</p>
-                      <p className="event-meta-value">
-                        {formatDate(ticket.event.startDate)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="event-meta-label">Chain</p>
-                      <p className="event-meta-value">
-                        {ticket.event.chainId ?? "Unknown"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="event-meta-label">Mint Tx</p>
-                      <p className="event-meta-value tx-line">
-                        {ticket.txHash ?? "Pending"}
-                      </p>
-                    </div>
-                  </div>
-                  {ticket.status === "LISTED" ? (
-                    <div
-                      style={{
-                        marginTop: "16px",
-                        textAlign: "center",
-                        padding: "16px",
-                        background: "rgba(255,255,255,0.05)",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <p style={{ margin: 0, color: "#aaa" }}>
-                        Vé đang được rao bán trên Marketplace.
-                      </p>
-                      <p
+              return (
+                <article className="card" key={ticket.id}>
+                  {/* ── Event Banner ── */}
+                  {ticket.event.bannerImage && (
+                    <div className="event-card-image">
+                      <img
+                        src={ticket.event.bannerImage}
+                        alt={ticket.event.title}
+                      />
+                      <span
+                        className="event-card-badge"
                         style={{
-                          margin: "4px 0 0",
-                          fontSize: "12px",
-                          color: "#666",
+                          backgroundColor: isListed
+                            ? "var(--color-accent-purple)"
+                            : isUsed
+                              ? "var(--color-ash)"
+                              : "var(--color-canvas)",
+                          color:
+                            isListed || isUsed ? "#fff" : "var(--color-ink)",
                         }}
                       >
-                        Bạn không thể lấy mã QR lúc này.
-                      </p>
+                        {isListed ? "Listed" : isUsed ? "Used" : ticket.status}
+                      </span>
                     </div>
-                  ) : (
-                    <>
-                      <TicketQR
-                        ticketId={ticket.id}
-                        eventId={ticket.eventId}
-                        tokenId={ticket.tokenId}
-                        ownerAddress={ticket.owner.walletAddress}
-                      />
-                      {ticket.status === "MINTED" &&
-                        !ticket.isUsed &&
-                        ticket.event.contractAddress && (
-                          <ListTicketButton
-                            ticketId={ticket.id}
-                            tokenId={ticket.tokenId}
-                            contractAddress={ticket.event.contractAddress}
-                            tierPrice={ticket.tier.price.toString()}
-                            tierName={ticket.tier.name}
-                          />
-                        )}
-                    </>
                   )}
+
+                  {/* ── Card Body ── */}
+                  <div style={{ padding: "var(--space-lg)" }}>
+                    <p className="event-card-date">
+                      {formatDate(ticket.event.startDate)}
+                    </p>
+                    <h3 className="event-card-title">{ticket.event.title}</h3>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "var(--space-md)",
+                        flexWrap: "wrap",
+                        marginTop: "var(--space-md)",
+                      }}
+                    >
+                      <span className="chip">{ticket.tier.name}</span>
+                      <span className="chip">Token #{ticket.tokenId}</span>
+                    </div>
+
+                    {/* ── Event Meta ── */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "var(--space-md)",
+                        marginTop: "var(--space-md)",
+                        paddingTop: "var(--space-md)",
+                        borderTop: "1px solid var(--color-hairline-soft)",
+                      }}
+                    >
+                      <div>
+                        <p className="text-caption-md text-muted">Venue</p>
+                        <p className="text-body-sm-strong">
+                          {ticket.event.venue ?? "TBA"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-caption-md text-muted">Chain</p>
+                        <p className="text-body-sm-strong">
+                          {ticket.event.chainId ?? "Unknown"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-caption-md text-muted">Price</p>
+                        <p className="text-body-sm-strong">
+                          {Number(ticket.tier.price).toFixed(3)} POL
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-caption-md text-muted">Status</p>
+                        <p className="text-body-sm-strong">
+                          {isListed
+                            ? "On Marketplace"
+                            : isUsed
+                              ? "Checked In"
+                              : "Valid"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ── QR or Listed State ── */}
+                    <div style={{ marginTop: "var(--space-lg)" }}>
+                      {isListed ? (
+                        <div
+                          style={{
+                            padding: "var(--space-lg)",
+                            backgroundColor: "var(--color-surface-card)",
+                            borderRadius: "var(--radius-md)",
+                            textAlign: "center",
+                          }}
+                        >
+                          <p className="text-body-sm-strong">
+                            Listed on Marketplace
+                          </p>
+                          <p className="text-caption-md text-muted mt-sm">
+                            QR code is unavailable while listed.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <TicketQR
+                            ticketId={ticket.id}
+                            eventId={ticket.eventId}
+                            tokenId={ticket.tokenId}
+                            ownerAddress={ticket.owner.walletAddress}
+                          />
+
+                          {ticket.status === "MINTED" &&
+                            !isUsed &&
+                            ticket.event.contractAddress && (
+                              <div style={{ marginTop: "var(--space-md)" }}>
+                                <ListTicketButton
+                                  ticketId={ticket.id}
+                                  tokenId={ticket.tokenId}
+                                  contractAddress={ticket.event.contractAddress}
+                                  tierPrice={ticket.tier.price.toString()}
+                                  tierName={ticket.tier.name}
+                                />
+                              </div>
+                            )}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </article>
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
-    </section>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      {/* ── Footer ── */}
+      <footer className="footer" style={{ marginTop: "var(--space-section)" }}>
+        <div className="footer-grid">
+          <div>
+            <p className="footer-col-header">TicketNFT</p>
+            <p className="text-body-sm text-muted">
+              NFT-based event ticketing on Polygon.
+            </p>
+          </div>
+          <div>
+            <p className="footer-col-header">Explore</p>
+            <Link href="/events" className="footer-link">
+              Events
+            </Link>
+            <Link href="/marketplace" className="footer-link">
+              Marketplace
+            </Link>
+          </div>
+          <div>
+            <p className="footer-col-header">Account</p>
+            <Link href="/my-tickets" className="footer-link">
+              My Tickets
+            </Link>
+          </div>
+          <div>
+            <p className="footer-col-header">Info</p>
+            <p className="text-body-sm text-muted">
+              Built with smart contracts for transparent, verifiable tickets.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }

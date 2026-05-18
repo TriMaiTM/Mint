@@ -85,22 +85,24 @@ export function BuyListedTicket({
   };
 
   return (
-    <div style={{ marginTop: "16px" }}>
+    <div style={{ marginTop: "var(--space-4)" }}>
       {error && (
-        <p className="buy-ticket-message err" style={{ marginBottom: "12px" }}>
+        <p
+          style={{
+            marginBottom: "var(--space-3)",
+            color: "var(--color-error)",
+          }}
+        >
           {error}
         </p>
       )}
       <button
-        className="pill-button pill-button-dark"
+        className="btn-secondary"
         onClick={handleBuy}
         disabled={isBuying}
         style={{ width: "100%" }}
       >
-        <span className="pill-button-glow" aria-hidden="true" />
-        <span className="pill-button-inner">
-          {isBuying ? "Đang xử lý giao dịch..." : "Mua lại vé này"}
-        </span>
+        {isBuying ? "Đang xử lý giao dịch..." : "Mua lại vé này"}
       </button>
     </div>
   );

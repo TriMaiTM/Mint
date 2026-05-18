@@ -10,7 +10,12 @@ type TicketQRProps = {
   ownerAddress: string;
 };
 
-export function TicketQR({ ticketId, eventId, tokenId, ownerAddress }: TicketQRProps) {
+export function TicketQR({
+  ticketId,
+  eventId,
+  tokenId,
+  ownerAddress,
+}: TicketQRProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showQR, setShowQR] = useState(false);
 
@@ -36,34 +41,46 @@ export function TicketQR({ ticketId, eventId, tokenId, ownerAddress }: TicketQRP
   }, [showQR, ticketId, eventId, tokenId, ownerAddress]);
 
   return (
-    <div className="ticket-qr-wrap">
+    <div>
       <button
-        className="pill-button pill-button-dark event-card-cta"
+        className="btn-secondary"
         onClick={() => setShowQR(!showQR)}
         type="button"
       >
-        <span className="pill-button-glow" aria-hidden="true" />
-        <span className="pill-button-inner">
-          {showQR ? "Ẩn QR" : "Hiện QR"}
-        </span>
+        {showQR ? "Ẩn QR" : "Hiện QR"}
       </button>
 
       {showQR && (
-        <div className="ticket-qr-canvas-wrap" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "var(--space-3)",
+            marginTop: "var(--space-4)",
+          }}
+        >
           <canvas ref={canvasRef} />
-          <p className="ticket-qr-hint">Quét mã QR này tại cổng check-in</p>
-          <button 
-            className="pill-button pill-button-light" 
+          <p className="text-caption-md text-muted">
+            Quét mã QR này tại cổng check-in
+          </p>
+          <button
+            className="btn-primary"
             onClick={() => {
-              const payload = JSON.stringify({ ticketId, eventId, tokenId, owner: ownerAddress, ts: Date.now() });
+              const payload = JSON.stringify({
+                ticketId,
+                eventId,
+                tokenId,
+                owner: ownerAddress,
+                ts: Date.now(),
+              });
               navigator.clipboard.writeText(payload);
               alert("Đã copy dữ liệu QR (dùng để test Check-in)");
             }}
             type="button"
             style={{ fontSize: "12px", padding: "6px 16px" }}
           >
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">Copy Payload (Test)</span>
+            Copy Payload (Test)
           </button>
         </div>
       )}

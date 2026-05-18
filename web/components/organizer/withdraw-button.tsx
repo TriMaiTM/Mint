@@ -69,10 +69,14 @@ export function WithdrawButton({ contractAddress }: WithdrawButtonProps) {
       setMessage("Rút tiền thành công!");
       fetchBalance();
     } catch (error) {
-      const raw = error instanceof Error ? error.message : "Không thể rút tiền.";
+      const raw =
+        error instanceof Error ? error.message : "Không thể rút tiền.";
       if (raw.toLowerCase().includes("no funds")) {
         setMessage("Không có tiền để rút.");
-      } else if (raw.toLowerCase().includes("user rejected") || raw.toLowerCase().includes("user denied")) {
+      } else if (
+        raw.toLowerCase().includes("user rejected") ||
+        raw.toLowerCase().includes("user denied")
+      ) {
         setMessage("Bạn đã huỷ giao dịch.");
       } else {
         setMessage(raw);
@@ -85,30 +89,42 @@ export function WithdrawButton({ contractAddress }: WithdrawButtonProps) {
   const hasBalance = balance && parseFloat(balance) > 0;
 
   return (
-    <div className="withdraw-wrap">
-      <div className="withdraw-balance">
-        <span className="withdraw-balance-label">Doanh thu</span>
-        <span className="withdraw-balance-value">
+    <div>
+      <div style={{ marginBottom: "var(--space-4)" }}>
+        <span
+          className="text-caption-md text-muted"
+          style={{ display: "block" }}
+        >
+          Doanh thu
+        </span>
+        <span
+          className="text-body-md"
+          style={{ display: "block", marginTop: "var(--space-1)" }}
+        >
           {balance !== null ? `${balance} ETH` : "—"}
         </span>
       </div>
 
       {hasBalance && (
         <button
-          className="pill-button pill-button-accent event-card-cta"
+          className="btn-primary"
           onClick={handleWithdraw}
           type="button"
           disabled={isWithdrawing}
         >
-          <span className="pill-button-glow" aria-hidden="true" />
-          <span className="pill-button-inner">
-            {isWithdrawing ? "Đang rút..." : "Rút tiền"}
-          </span>
+          {isWithdrawing ? "Đang rút..." : "Rút tiền"}
         </button>
       )}
 
       {message && (
-        <p className={isSuccess ? "buy-ticket-message ok" : "buy-ticket-message err"}>
+        <p
+          style={{
+            marginTop: "var(--space-3)",
+            color: isSuccess
+              ? "var(--color-success-deep)"
+              : "var(--color-error)",
+          }}
+        >
           {message}
         </p>
       )}

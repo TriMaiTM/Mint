@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useWalletClient, usePublicClient, useAccount, useReadContract } from "wagmi";
+import {
+  useWalletClient,
+  usePublicClient,
+  useAccount,
+  useReadContract,
+} from "wagmi";
 import { useRouter } from "next/navigation";
 import { eventTicketNftAbi } from "@/lib/contracts";
 
@@ -11,7 +16,11 @@ type EventSettingsFormProps = {
   currentStatus: string;
 };
 
-export function EventSettingsForm({ eventId, contractAddress, currentStatus }: EventSettingsFormProps) {
+export function EventSettingsForm({
+  eventId,
+  contractAddress,
+  currentStatus,
+}: EventSettingsFormProps) {
   const router = useRouter();
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -21,11 +30,12 @@ export function EventSettingsForm({ eventId, contractAddress, currentStatus }: E
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  const { data: isTransferable, refetch: refetchTransferable } = useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: eventTicketNftAbi,
-    functionName: "transferable",
-  });
+  const { data: isTransferable, refetch: refetchTransferable } =
+    useReadContract({
+      address: contractAddress as `0x${string}`,
+      abi: eventTicketNftAbi,
+      functionName: "transferable",
+    });
 
   async function handleEndEvent() {
     if (!walletClient || !publicClient || !address) return;
@@ -34,7 +44,11 @@ export function EventSettingsForm({ eventId, contractAddress, currentStatus }: E
     setIsError(false);
 
     try {
-      if (!confirm("Are you sure you want to end this event? This action cannot be undone and will prevent further ticket transfers and sales.")) {
+      if (
+        !confirm(
+          "Are you sure you want to end this event? This action cannot be undone and will prevent further ticket transfers and sales.",
+        )
+      ) {
         setIsSubmitting(false);
         return;
       }
@@ -66,7 +80,9 @@ export function EventSettingsForm({ eventId, contractAddress, currentStatus }: E
       router.refresh();
     } catch (error) {
       setIsError(true);
-      setMessage(error instanceof Error ? error.message : "Failed to end event");
+      setMessage(
+        error instanceof Error ? error.message : "Failed to end event",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -79,8 +95,8 @@ export function EventSettingsForm({ eventId, contractAddress, currentStatus }: E
     setIsError(false);
 
     try {
-      const confirmMsg = enabled 
-        ? "Enable secondary market transfers?" 
+      const confirmMsg = enabled
+        ? "Enable secondary market transfers?"
         : "Disable secondary market transfers? Users will not be able to sell or transfer tickets.";
       if (!confirm(confirmMsg)) {
         setIsSubmitting(false);
@@ -102,7 +118,9 @@ export function EventSettingsForm({ eventId, contractAddress, currentStatus }: E
       refetchTransferable();
     } catch (error) {
       setIsError(true);
-      setMessage(error instanceof Error ? error.message : "Failed to toggle transfers");
+      setMessage(
+        error instanceof Error ? error.message : "Failed to toggle transfers",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -111,37 +129,49 @@ export function EventSettingsForm({ eventId, contractAddress, currentStatus }: E
   const isEnded = currentStatus === "ENDED" || currentStatus === "CANCELLED";
 
   return (
-    <div className="event-card">
-      <h3 className="event-title">Event Settings</h3>
-      <p className="event-description">Manage on-chain settings for this event.</p>
-      
+    <div className="card">
+      <h3 className="text-heading-md">Event Settings</h3>
+      <p className="text-body-sm text-muted">
+        Manage on-chain settings for this event.
+      </p>
+
       {message && (
-        <p className={`buy-ticket-message ${isError ? "err" : "ok"}`} style={{ marginBottom: "16px" }}>
+        <p
+          style={{
+            marginBottom: "var(--space-4)",
+            color: isError ? "var(--color-error)" : "var(--color-success-deep)",
+          }}
+        >
           {message}
         </p>
       )}
 
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px" }}>
-        <button 
-          className="pill-button pill-button-dark" 
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--space-3)",
+          flexWrap: "wrap",
+          marginTop: "var(--space-4)",
+        }}
+      >
+        <button
+          className="btn-secondary"
           onClick={() => handleToggleTransfers(!isTransferable)}
           disabled={isSubmitting || isEnded || isTransferable === undefined}
         >
-          <span className="pill-button-glow" aria-hidden="true" />
-          <span className="pill-button-inner">
-            {isTransferable === undefined ? "Loading..." : (isTransferable ? "Disable Transfers" : "Enable Transfers")}
-          </span>
+          {isTransferable === undefined
+            ? "Loading..."
+            : isTransferable
+              ? "Disable Transfers"
+              : "Enable Transfers"}
         </button>
 
-        <button 
-          className="pill-button pill-button-accent" 
+        <button
+          className="btn-primary"
           onClick={handleEndEvent}
           disabled={isSubmitting || isEnded}
         >
-          <span className="pill-button-glow" aria-hidden="true" />
-          <span className="pill-button-inner">
-            {isEnded ? "Event Ended" : "End Event Permanently"}
-          </span>
+          {isEnded ? "Event Ended" : "End Event Permanently"}
         </button>
       </div>
     </div>

@@ -171,28 +171,29 @@ export function BuyTicketButton({
   }
 
   return (
-    <div className="buy-ticket-wrap">
+    <div>
       <button
-        className="pill-button pill-button-light event-card-cta"
+        className="btn-primary"
         onClick={handleBuy}
         type="button"
         disabled={isBuying || !eventContractAddress}
+        style={{ width: "100%" }}
       >
-        <span className="pill-button-glow" aria-hidden="true" />
-        <span className="pill-button-inner">
-          {isBuying
-            ? "Đang xử lý..."
-            : eventContractAddress
-              ? "Mua vé"
-              : "Chưa mở bán"}
-        </span>
+        {isBuying
+          ? "Đang xử lý..."
+          : eventContractAddress
+            ? "Mua vé"
+            : "Chưa mở bán"}
       </button>
 
       {message ? (
         <p
-          className={
-            isSuccess ? "buy-ticket-message ok" : "buy-ticket-message err"
-          }
+          style={{
+            marginTop: "var(--space-3)",
+            color: isSuccess
+              ? "var(--color-success-deep)"
+              : "var(--color-error)",
+          }}
         >
           {message}
         </p>

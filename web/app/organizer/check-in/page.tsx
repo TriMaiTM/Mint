@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { QRScanner } from "@/components/organizer/qr-scanner";
+import { Nav } from "@/components/layout/nav";
 
 type CheckInResult = {
   success: boolean;
   message: string;
-  ticketData?: any;
+  ticketData?: {
+    ticketId: string;
+    eventId: string;
+    tokenId: number;
+    owner?: string;
+  };
 };
 
 export default function CheckInPage() {
   const [result, setResult] = useState<CheckInResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [scanKey, setScanKey] = useState(0); // Used to force re-mount scanner
+  const [scanKey, setScanKey] = useState(0);
 
   const handleScan = async (decodedText: string) => {
     if (isProcessing) return;
@@ -22,9 +27,13 @@ export default function CheckInPage() {
 
     try {
       const payload = JSON.parse(decodedText);
-      
-      if (!payload.ticketId || !payload.eventId || payload.tokenId === undefined) {
-        throw new Error("Mã QR không hợp lệ.");
+
+      if (
+        !payload.ticketId ||
+        !payload.eventId ||
+        payload.tokenId === undefined
+      ) {
+        throw new Error("Invalid QR code format.");
       }
 
       const response = await fetch("/api/tickets/check-in", {
@@ -37,19 +46,21 @@ export default function CheckInPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Lỗi khi check-in.");
+        throw new Error(data.error || "Check-in failed.");
       }
 
       setResult({
         success: true,
-        message: `Check-in thành công! Token #${payload.tokenId}`,
+        message: `Check-in successful! Token #${payload.tokenId}`,
         ticketData: payload,
       });
-
     } catch (error) {
       setResult({
         success: false,
-        message: error instanceof Error ? error.message : "Mã QR không hợp lệ hoặc lỗi kết nối.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Invalid QR code or connection error.",
       });
     } finally {
       setIsProcessing(false);
@@ -62,80 +73,148 @@ export default function CheckInPage() {
   };
 
   return (
-    <section className="events-root">
-      <video
-        className="hero-video"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-      <div className="hero-overlay" />
+    <>
+      {/* ── Navigation ── */}
+      <Nav />
 
-      <div className="hero-content-layer">
-        <nav className="hero-navbar" aria-label="Primary">
-          <div className="hero-navbar-left">
-            <Link href="/" className="hero-logo" aria-label="Homepage">
-              LOGOIPSUM
-            </Link>
-          </div>
+      {/* ── Page Content ── */}
+      <main className="container section-gap" style={{ maxWidth: "600px" }}>
+        <header
+          style={{ textAlign: "center", marginBottom: "var(--space-xxl)" }}
+        >
+          <h1 className="text-display-lg">Check-in</h1>
+          <p className="text-body-md text-muted mt-sm">
+            Scan attendee QR codes to validate and check in tickets.
+          </p>
+        </header>
 
-          <Link href="/organizer/events" className="pill-button pill-button-light">
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">Quản lý sự kiện</span>
-          </Link>
-        </nav>
+        <div className="card-feature">
+          {!result ? (
+            <>
+              <p
+                className="text-body-md text-muted"
+                style={{ textAlign: "center", marginBottom: "var(--space-lg)" }}
+              >
+                Point the camera at the attendee&apos;s QR code
+              </p>
 
-        <main className="events-main" style={{ maxWidth: "600px" }}>
-          <header className="events-header" style={{ textAlign: "center" }}>
-            <p className="events-eyebrow">Scanner</p>
-            <h1 className="events-title">Check-in Vé</h1>
-          </header>
-
-          <div className="event-create-form" style={{ padding: "20px" }}>
-            {!result ? (
-              <>
-                <p style={{ textAlign: "center", marginBottom: "16px", color: "rgba(255,255,255,0.8)" }}>
-                  Đưa mã QR của khách hàng vào khung hình để quét
-                </p>
-                <div style={{ borderRadius: "12px", overflow: "hidden", background: "#000" }}>
-                  <QRScanner key={scanKey} onScanSuccess={handleScan} />
-                </div>
-                {isProcessing && (
-                  <p className="buy-ticket-message" style={{ textAlign: "center", marginTop: "16px" }}>
-                    Đang xử lý...
-                  </p>
-                )}
-              </>
-            ) : (
-              <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>
-                  {result.success ? "✅" : "❌"}
-                </div>
-                <h3 style={{ fontSize: "20px", marginBottom: "12px", color: result.success ? "#4ade80" : "#f87171" }}>
-                  {result.message}
-                </h3>
-                {result.ticketData && (
-                  <div style={{ background: "rgba(255,255,255,0.05)", padding: "16px", borderRadius: "12px", marginBottom: "24px", textAlign: "left" }}>
-                    <p style={{ margin: "0 0 8px", fontSize: "14px", color: "rgba(255,255,255,0.6)" }}>Thông tin vé:</p>
-                    <p style={{ margin: "0 0 4px", fontSize: "14px" }}>Token ID: {result.ticketData.tokenId}</p>
-                    <p style={{ margin: "0", fontSize: "14px", wordBreak: "break-all" }}>Owner: {result.ticketData.owner}</p>
-                  </div>
-                )}
-                <button
-                  className="pill-button pill-button-light"
-                  onClick={resetScanner}
-                  type="button"
-                >
-                  <span className="pill-button-glow" aria-hidden="true" />
-                  <span className="pill-button-inner">Quét vé tiếp theo</span>
-                </button>
+              <div
+                className="qr-container"
+                style={{ marginBottom: "var(--space-lg)" }}
+              >
+                <QRScanner key={scanKey} onScanSuccess={handleScan} />
               </div>
-            )}
-          </div>
-        </main>
-      </div>
-    </section>
+
+              {isProcessing && (
+                <p
+                  className="text-body-md"
+                  style={{
+                    textAlign: "center",
+                    color: "var(--color-accent-blue)",
+                  }}
+                >
+                  Processing...
+                </p>
+              )}
+            </>
+          ) : (
+            <div style={{ textAlign: "center", padding: "var(--space-xxl) 0" }}>
+              {/* Status Icon */}
+              <div
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  margin: "0 auto var(--space-lg)",
+                  borderRadius: "var(--radius-full)",
+                  backgroundColor: result.success
+                    ? "var(--color-success-pale)"
+                    : "var(--color-error)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "28px",
+                }}
+              >
+                {result.success ? "✓" : "✕"}
+              </div>
+
+              {/* Message */}
+              <h2
+                className="text-heading-lg mb-md"
+                style={{
+                  color: result.success
+                    ? "var(--color-success-deep)"
+                    : "var(--color-error)",
+                }}
+              >
+                {result.message}
+              </h2>
+
+              {/* Ticket Data */}
+              {result.ticketData && (
+                <div
+                  className="card-feature-soft"
+                  style={{
+                    textAlign: "left",
+                    marginBottom: "var(--space-xl)",
+                  }}
+                >
+                  <p className="text-body-sm text-muted mb-sm">
+                    Ticket Details
+                  </p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "var(--space-sm)",
+                    }}
+                  >
+                    <div>
+                      <p className="text-body-sm text-muted">Token ID</p>
+                      <p className="text-body-strong">
+                        #{result.ticketData.tokenId}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-body-sm text-muted">Event</p>
+                      <p
+                        className="text-body-strong"
+                        style={{ wordBreak: "break-all" }}
+                      >
+                        {result.ticketData.eventId}
+                      </p>
+                    </div>
+                    {result.ticketData.owner && (
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <p className="text-body-sm text-muted">Owner</p>
+                        <p
+                          className="text-body-sm"
+                          style={{
+                            fontFamily: "monospace",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {result.ticketData.owner}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Scan Next */}
+              <button
+                className="btn-primary"
+                onClick={resetScanner}
+                type="button"
+                style={{ minWidth: "200px" }}
+              >
+                Scan Next Ticket
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   );
 }

@@ -5,7 +5,8 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "TicketNFT | Web3 Event Ticketing",
-  description: "NFT event ticketing platform with real-time Web3 experiences.",
+  description:
+    "Discover events, buy NFT tickets, and trade on the marketplace.",
 };
 
 export default function RootLayout({
@@ -14,14 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap"
-        />
-      </head>
-      <body className="min-h-full">
+    <html lang="en">
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>

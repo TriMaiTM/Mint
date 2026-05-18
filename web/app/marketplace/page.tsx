@@ -4,6 +4,7 @@ import { formatEther } from "viem";
 import { BuyListedTicket } from "@/components/marketplace/buy-listed-ticket";
 import { cookies } from "next/headers";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { Nav } from "@/components/layout/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,10 @@ function formatDate(value: Date): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(value);
+}
+
+function formatAddress(addr: string): string {
+  return `${addr.substring(0, 6)}...${addr.substring(38)}`;
 }
 
 export default async function MarketplacePage() {
@@ -34,107 +39,172 @@ export default async function MarketplacePage() {
   });
 
   return (
-    <section className="events-root">
-      <video
-        suppressHydrationWarning
-        className="hero-video"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-      <div className="hero-overlay" />
+    <>
+      {/* ── Sticky Navigation ── */}
+      <Nav />
 
-      <div className="hero-content-layer">
-        <nav className="hero-navbar" aria-label="Primary">
-          <Link href="/" className="hero-logo" aria-label="Homepage">
-            LOGOIPSUM
-          </Link>
-          <Link href="/my-tickets" className="pill-button pill-button-dark">
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">My Tickets</span>
-          </Link>
-        </nav>
+      <main className="container section-gap">
+        {/* ── Header ── */}
+        <header className="mb-xl">
+          <h1 className="text-display-lg">Ticket Marketplace</h1>
+          <p className="text-body-md text-muted mt-sm">
+            Buy and sell verified NFT tickets securely via smart contracts.
+          </p>
+        </header>
 
-        <main className="events-main">
-          <header className="events-header">
-            <p className="events-eyebrow">Secondary Market</p>
-            <h1 className="events-title">Ticket Marketplace</h1>
-            <p className="events-subtitle">
-              Buy and sell verified NFT tickets securely via smart contracts.
+        {listings.length === 0 ? (
+          /* ── Empty State ── */
+          <div
+            className="card-feature-soft text-center"
+            style={{ padding: "var(--space-xxl) var(--space-xl)" }}
+          >
+            <p className="text-heading-md">No listings yet</p>
+            <p className="text-body-md text-muted mt-md">
+              There are currently no tickets listed for sale on the marketplace.
             </p>
-          </header>
+            <Link
+              href="/events"
+              className="btn-primary mt-lg"
+              style={{ display: "inline-flex" }}
+            >
+              Browse Events
+            </Link>
+          </div>
+        ) : (
+          /* ── Listings Grid ── */
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "var(--space-lg)",
+            }}
+          >
+            {listings.map((listing) => {
+              const isSeller = session?.sub === listing.sellerId;
+              const formattedPrice = formatEther(BigInt(listing.price));
 
-          {listings.length === 0 ? (
-            <div className="events-empty">
-              <p>Hiện không có vé nào đang được rao bán.</p>
-            </div>
-          ) : (
-            <div className="events-grid">
-              {listings.map((listing) => {
-                const isSeller = session?.sub === listing.sellerId;
-                const formattedPrice = formatEther(BigInt(listing.price));
-
-                return (
-                  <article className="event-card" key={listing.id}>
-                    <div className="event-card-top">
-                      <span className="event-status" style={{ background: "rgba(0, 200, 100, 0.2)", color: "#00FF66", border: "1px solid rgba(0, 200, 100, 0.5)" }}>
-                        ĐANG BÁN
-                      </span>
-                      <span className="event-chain">Token #{listing.ticket.tokenId}</span>
+              return (
+                <article className="card" key={listing.id}>
+                  {/* ── Event Image ── */}
+                  {listing.event.bannerImage && (
+                    <div className="event-card-image">
+                      <img
+                        src={listing.event.bannerImage}
+                        alt={listing.event.title}
+                      />
+                      <span className="event-card-badge">For Sale</span>
                     </div>
+                  )}
 
-                    <h3 className="event-title">{listing.event.title}</h3>
-                    <p className="event-description">
-                      Tier: {listing.ticket.tier.name}
+                  {/* ── Card Body ── */}
+                  <div
+                    className="event-card-body"
+                    style={{ padding: "var(--space-lg)" }}
+                  >
+                    <p className="event-card-date">
+                      {formatDate(listing.event.startDate)}
+                    </p>
+                    <h3 className="event-card-title">{listing.event.title}</h3>
+                    <p className="event-card-meta">
+                      {listing.ticket.tier.name} · Token #
+                      {listing.ticket.tokenId}
                     </p>
 
-                    <div className="event-meta-grid" style={{ marginTop: "16px", background: "rgba(255,255,255,0.03)", padding: "12px", borderRadius: "8px" }}>
+                    {/* ── Price & Seller ── */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: "var(--space-md)",
+                        paddingTop: "var(--space-md)",
+                        borderTop: "1px solid var(--color-hairline-soft)",
+                      }}
+                    >
                       <div>
-                        <p className="event-meta-label">Giá bán</p>
-                        <p className="event-meta-value" style={{ fontSize: "18px", color: "#fff" }}>
+                        <p className="text-body-sm-strong">
                           {formattedPrice} POL
                         </p>
-                      </div>
-                      <div>
-                        <p className="event-meta-label">Người bán</p>
-                        <p className="event-meta-value tx-line" title={listing.seller.walletAddress}>
-                          {isSeller ? "Bạn" : `${listing.seller.walletAddress.substring(0, 6)}...${listing.seller.walletAddress.substring(38)}`}
+                        <p className="text-caption-md text-muted">
+                          {isSeller
+                            ? "Your listing"
+                            : `Seller: ${formatAddress(listing.seller.walletAddress)}`}
                         </p>
                       </div>
+                      {listing.event.venue && (
+                        <p
+                          className="text-caption-md text-muted"
+                          style={{ textAlign: "right" }}
+                        >
+                          📍 {listing.event.venue}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="event-meta-grid" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "12px" }}>
-                      <div>
-                        <p className="event-meta-label">Sự kiện bắt đầu</p>
-                        <p className="event-meta-value">{formatDate(listing.event.startDate)}</p>
-                      </div>
-                      <div>
-                        <p className="event-meta-label">Địa điểm</p>
-                        <p className="event-meta-value">{listing.event.venue ?? "TBA"}</p>
-                      </div>
+                    {/* ── Action ── */}
+                    <div style={{ marginTop: "var(--space-lg)" }}>
+                      {isSeller ? (
+                        <div
+                          style={{
+                            padding: "var(--space-md)",
+                            backgroundColor: "var(--color-surface-card)",
+                            borderRadius: "var(--radius-md)",
+                            textAlign: "center",
+                          }}
+                        >
+                          <p className="text-body-sm text-muted">
+                            This is your listing
+                          </p>
+                        </div>
+                      ) : (
+                        <BuyListedTicket
+                          ticketId={listing.ticketId}
+                          tokenId={listing.ticket.tokenId}
+                          contractAddress={listing.event.contractAddress!}
+                          priceWei={listing.price}
+                        />
+                      )}
                     </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </main>
 
-                    {isSeller ? (
-                      <div style={{ marginTop: "16px", textAlign: "center", padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "8px" }}>
-                        <p style={{ margin: 0, fontSize: "14px", color: "#aaa" }}>Đây là vé bạn đang rao bán</p>
-                      </div>
-                    ) : (
-                      <BuyListedTicket
-                        ticketId={listing.ticketId}
-                        tokenId={listing.ticket.tokenId}
-                        contractAddress={listing.event.contractAddress!}
-                        priceWei={listing.price}
-                      />
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </main>
-      </div>
-    </section>
+      {/* ── Footer ── */}
+      <footer className="footer" style={{ marginTop: "var(--space-section)" }}>
+        <div className="footer-grid">
+          <div>
+            <p className="footer-col-header">TicketNFT</p>
+            <p className="text-body-sm text-muted">
+              NFT-based event ticketing on Polygon.
+            </p>
+          </div>
+          <div>
+            <p className="footer-col-header">Explore</p>
+            <Link href="/events" className="footer-link">
+              Events
+            </Link>
+            <Link href="/marketplace" className="footer-link">
+              Marketplace
+            </Link>
+          </div>
+          <div>
+            <p className="footer-col-header">Account</p>
+            <Link href="/my-tickets" className="footer-link">
+              My Tickets
+            </Link>
+          </div>
+          <div>
+            <p className="footer-col-header">Info</p>
+            <p className="text-body-sm text-muted">
+              Built with smart contracts for transparent, verifiable tickets.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }

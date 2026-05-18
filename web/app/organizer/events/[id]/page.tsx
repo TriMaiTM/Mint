@@ -3,16 +3,21 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { Nav } from "@/components/layout/nav";
 import { EventSettingsForm } from "@/components/organizer/event-settings-form";
 
 type OrganizerEventDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function OrganizerEventDetailPage({ params }: OrganizerEventDetailPageProps) {
+export default async function OrganizerEventDetailPage({
+  params,
+}: OrganizerEventDetailPageProps) {
   const { id } = await params;
   const cookieStore = await cookies();
-  const session = verifySessionToken(cookieStore.get(getSessionCookieName())?.value);
+  const session = verifySessionToken(
+    cookieStore.get(getSessionCookieName())?.value,
+  );
 
   if (!session) {
     return (
@@ -31,7 +36,9 @@ export default async function OrganizerEventDetailPage({ params }: OrganizerEven
             <div className="events-empty">
               <p>Please sign in with organizer wallet first.</p>
               <p>
-                <Link href="/" className="event-inline-link">Go back home</Link>
+                <Link href="/" className="event-inline-link">
+                  Go back home
+                </Link>
               </p>
             </div>
           </main>
@@ -60,8 +67,14 @@ export default async function OrganizerEventDetailPage({ params }: OrganizerEven
     notFound();
   }
 
-  const totalTickets = event.ticketTiers.reduce((sum, tier) => sum + tier.maxQuantity, 0);
-  const soldTickets = event.ticketTiers.reduce((sum, tier) => sum + tier.soldCount, 0);
+  const totalTickets = event.ticketTiers.reduce(
+    (sum, tier) => sum + tier.maxQuantity,
+    0,
+  );
+  const soldTickets = event.ticketTiers.reduce(
+    (sum, tier) => sum + tier.soldCount,
+    0,
+  );
   const usedTickets = event.tickets.filter((t) => t.isUsed).length;
 
   return (
@@ -77,15 +90,7 @@ export default async function OrganizerEventDetailPage({ params }: OrganizerEven
       <div className="hero-overlay" />
 
       <div className="hero-content-layer">
-        <nav className="hero-navbar" aria-label="Primary">
-          <Link href="/" className="hero-logo" aria-label="Homepage">
-            LOGOIPSUM
-          </Link>
-          <Link href="/organizer/events" className="pill-button pill-button-dark">
-            <span className="pill-button-glow" aria-hidden="true" />
-            <span className="pill-button-inner">Back to My Events</span>
-          </Link>
-        </nav>
+        <Nav />
 
         <main className="events-main">
           <header className="events-header">
@@ -104,24 +109,34 @@ export default async function OrganizerEventDetailPage({ params }: OrganizerEven
             <div className="event-card">
               <p className="event-meta-label">Total Revenue</p>
               <p className="event-meta-value">
-                {event.ticketTiers.reduce((sum, tier) => sum + Number(tier.price) * tier.soldCount, 0).toFixed(3)} POL
+                {event.ticketTiers
+                  .reduce(
+                    (sum, tier) => sum + Number(tier.price) * tier.soldCount,
+                    0,
+                  )
+                  .toFixed(3)}{" "}
+                POL
               </p>
             </div>
             <div className="event-card">
               <p className="event-meta-label">Tickets Sold</p>
-              <p className="event-meta-value">{soldTickets} / {totalTickets}</p>
+              <p className="event-meta-value">
+                {soldTickets} / {totalTickets}
+              </p>
             </div>
             <div className="event-card">
               <p className="event-meta-label">Attendees Checked-in</p>
-              <p className="event-meta-value">{usedTickets} / {soldTickets}</p>
+              <p className="event-meta-value">
+                {usedTickets} / {soldTickets}
+              </p>
             </div>
           </div>
 
           {event.contractAddress ? (
-            <EventSettingsForm 
-              eventId={event.id} 
-              contractAddress={event.contractAddress} 
-              currentStatus={event.status} 
+            <EventSettingsForm
+              eventId={event.id}
+              contractAddress={event.contractAddress}
+              currentStatus={event.status}
             />
           ) : (
             <div className="buy-ticket-message err">
