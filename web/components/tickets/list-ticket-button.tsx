@@ -4,6 +4,7 @@ import { useState } from "react";
 import { encodeFunctionData, parseEther } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { eventTicketNftAbi, TicketMarketplaceAbi } from "@/lib/contracts";
+import { LoadingModal } from "@/components/ui/loading-modal";
 
 type ListTicketButtonProps = {
   ticketId: string;
@@ -25,6 +26,7 @@ export function ListTicketButton({
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const [isListing, setIsListing] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [priceInput, setPriceInput] = useState("");
@@ -62,6 +64,7 @@ export function ListTicketButton({
 
     setIsListing(true);
     setError(null);
+    setLoadingMessage("Checking approval...");
 
     try {
       const ethereum = (window as any).ethereum;
@@ -94,6 +97,7 @@ export function ListTicketButton({
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
 
+      setLoadingMessage("Listing your ticket...");
       const priceWei = parseEther(priceInput);
       const listData = encodeFunctionData({
         abi: TicketMarketplaceAbi,
@@ -124,6 +128,7 @@ export function ListTicketButton({
         throw new Error(data.error || "Failed to sync listing");
       }
 
+      setLoadingMessage(null);
       closeModal();
       window.location.reload();
     } catch (err) {
@@ -131,6 +136,7 @@ export function ListTicketButton({
       setError(err instanceof Error ? err.message : "Failed to list ticket");
     } finally {
       setIsListing(false);
+      setLoadingMessage(null);
     }
   }
 
@@ -309,6 +315,8 @@ export function ListTicketButton({
           </div>
         </div>
       )}
+
+      <LoadingModal show={!!loadingMessage} message={loadingMessage ?? ""} />
     </>
   );
 }

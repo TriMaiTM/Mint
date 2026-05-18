@@ -11,15 +11,15 @@ import { useRouter } from "next/navigation";
 import { eventTicketNftAbi } from "@/lib/contracts";
 
 type EventSettingsFormProps = {
-  eventId: string;
   contractAddress: string;
-  currentStatus: string;
+  isEnded: boolean;
+  eventId?: string;
 };
 
 export function EventSettingsForm({
-  eventId,
   contractAddress,
-  currentStatus,
+  isEnded: isEndedProp,
+  eventId,
 }: EventSettingsFormProps) {
   const router = useRouter();
   const { address } = useAccount();
@@ -126,7 +126,7 @@ export function EventSettingsForm({
     }
   }
 
-  const isEnded = currentStatus === "ENDED" || currentStatus === "CANCELLED";
+  const isEnded = isEndedProp;
 
   return (
     <div className="card">

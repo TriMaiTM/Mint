@@ -4,6 +4,7 @@ import { useState } from "react";
 import { encodeFunctionData } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { TicketMarketplaceAbi } from "@/lib/contracts";
+import { LoadingModal } from "@/components/ui/loading-modal";
 
 type BuyListedTicketProps = {
   ticketId: string;
@@ -21,6 +22,7 @@ export function BuyListedTicket({
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const [isBuying, setIsBuying] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const marketplaceAddress = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS;
@@ -33,6 +35,7 @@ export function BuyListedTicket({
 
     setIsBuying(true);
     setError(null);
+    setLoadingMessage("Processing transaction...");
 
     try {
       const ethereum = (window as any).ethereum;
@@ -62,6 +65,8 @@ export function BuyListedTicket({
 
       await publicClient.waitForTransactionReceipt({ hash: buyHash });
 
+      setLoadingMessage("Syncing purchase...");
+
       // 2. Sync with DB
       const res = await fetch("/api/marketplace/buy", {
         method: "POST",
@@ -75,21 +80,27 @@ export function BuyListedTicket({
         throw new Error(data.error || "Failed to sync purchase");
       }
 
+      setLoadingMessage(null);
       window.location.href = "/my-tickets";
     } catch (err) {
       console.error("Buy listed ticket error:", err);
-      setError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi mua vé");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while purchasing the ticket",
+      );
     } finally {
       setIsBuying(false);
+      setLoadingMessage(null);
     }
   };
 
   return (
-    <div style={{ marginTop: "var(--space-4)" }}>
+    <div style={{ marginTop: "var(--space-lg)" }}>
       {error && (
         <p
           style={{
-            marginBottom: "var(--space-3)",
+            marginBottom: "var(--space-sm)",
             color: "var(--color-error)",
           }}
         >
@@ -102,8 +113,10 @@ export function BuyListedTicket({
         disabled={isBuying}
         style={{ width: "100%" }}
       >
-        {isBuying ? "Đang xử lý giao dịch..." : "Mua lại vé này"}
+        {isBuying ? "Processing transaction..." : "Buy this ticket"}
       </button>
+
+      <LoadingModal show={!!loadingMessage} message={loadingMessage ?? ""} />
     </div>
   );
 }

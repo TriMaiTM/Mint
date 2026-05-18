@@ -3,8 +3,6 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { Nav } from "@/components/layout/nav";
-import { PublishEventButton } from "@/components/organizer/publish-event-button";
-import { WithdrawButton } from "@/components/organizer/withdraw-button";
 
 export default async function OrganizerEventsPage() {
   const cookieStore = await cookies();
@@ -197,76 +195,19 @@ export default async function OrganizerEventsPage() {
                       </div>
                     </div>
 
-                    {/* Contract Address */}
-                    {event.contractAddress && (
-                      <div style={{ marginTop: "var(--space-md)" }}>
-                        <p className="text-body-sm text-muted">Contract</p>
-                        <p
-                          className="text-body-sm"
-                          style={{
-                            fontFamily: "monospace",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {event.contractAddress}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div
+                    {/* Manage Button */}
+                    <Link
+                      href={`/organizer/events/${event.id}`}
+                      className="btn-primary"
                       style={{
-                        display: "flex",
-                        gap: "var(--space-sm)",
+                        display: "block",
+                        textAlign: "center",
                         marginTop: "var(--space-lg)",
-                        flexWrap: "wrap",
+                        textDecoration: "none",
                       }}
                     >
-                      <Link
-                        href={`/organizer/events/${event.id}`}
-                        className="btn-secondary"
-                        style={{
-                          flex: 1,
-                          textAlign: "center",
-                          minWidth: "120px",
-                        }}
-                      >
-                        Manage Event
-                      </Link>
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="btn-tertiary"
-                        style={{
-                          flex: 1,
-                          textAlign: "center",
-                          minWidth: "120px",
-                        }}
-                      >
-                        View Public
-                      </Link>
-                    </div>
-
-                    {/* Publish / Withdraw */}
-                    <div style={{ marginTop: "var(--space-md)" }}>
-                      {isOnChain ? (
-                        <WithdrawButton
-                          contractAddress={event.contractAddress!}
-                        />
-                      ) : (
-                        <PublishEventButton
-                          eventId={event.id}
-                          eventTitle={event.title}
-                          organizerWalletAddress={me.walletAddress}
-                          tiers={event.ticketTiers.map((tier) => ({
-                            id: tier.id,
-                            name: tier.name,
-                            price: tier.price.toString(),
-                            maxQuantity: tier.maxQuantity,
-                          }))}
-                          contractAddress={event.contractAddress}
-                        />
-                      )}
-                    </div>
+                      Manage Event
+                    </Link>
                   </div>
                 </article>
               );

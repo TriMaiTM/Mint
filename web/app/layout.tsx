@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@rainbow-me/rainbowkit/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ToastProvider } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "TicketNFT | Web3 Event Ticketing",
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <ToastProvider>{children}</ToastProvider>
+        </Providers>
       </body>
     </html>
   );

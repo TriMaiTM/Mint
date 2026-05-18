@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoadingModal } from "@/components/ui/loading-modal";
 
 type PublishTierInput = {
   id: string;
@@ -25,13 +26,13 @@ export function PublishEventButton({
   contractAddress,
 }: PublishEventButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handlePublish() {
     setIsPublishing(true);
-    setMessage(null);
-    setIsSuccess(false);
+    setLoadingMessage(null);
+    setError(null);
 
     try {
       if (contractAddress) {
@@ -41,7 +42,7 @@ export function PublishEventButton({
         throw new Error("Vui lòng thêm ít nhất một hạng vé trước khi publish.");
       }
 
-      setMessage("Đang publish lên blockchain...");
+      setLoadingMessage("Publishing to blockchain...");
 
       const response = await fetch("/api/organizer/publish", {
         method: "POST",
@@ -67,10 +68,7 @@ export function PublishEventButton({
         throw new Error(payload.error ?? "Publish failed");
       }
 
-      setIsSuccess(true);
-      setMessage(
-        `Publish thành công! Contract: ${payload.data.contractAddress}`,
-      );
+      setLoadingMessage(null);
 
       // Reload to show updated state
       setTimeout(() => window.location.reload(), 1500);
@@ -78,8 +76,9 @@ export function PublishEventButton({
       const raw =
         error instanceof Error
           ? error.message
-          : "Không thể publish sự kiện. Vui lòng thử lại.";
-      setMessage(raw);
+          : "Failed to publish event. Please try again.";
+      setLoadingMessage(null);
+      setError(raw);
     } finally {
       setIsPublishing(false);
     }
@@ -95,24 +94,24 @@ export function PublishEventButton({
         style={{ width: "100%" }}
       >
         {isPublishing
-          ? "Đang publish..."
+          ? "Publishing..."
           : contractAddress
-            ? "Đã publish"
+            ? "Published"
             : "Publish On-chain"}
       </button>
 
-      {message ? (
+      {error ? (
         <p
           style={{
-            marginTop: "var(--space-3)",
-            color: isSuccess
-              ? "var(--color-success-deep)"
-              : "var(--color-error)",
+            marginTop: "var(--space-sm)",
+            color: "var(--color-error)",
           }}
         >
-          {message}
+          {error}
         </p>
       ) : null}
+
+      <LoadingModal show={!!loadingMessage} message={loadingMessage ?? ""} />
     </div>
   );
 }

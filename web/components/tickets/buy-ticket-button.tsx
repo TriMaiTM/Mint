@@ -4,6 +4,7 @@ import { useState } from "react";
 import { encodeFunctionData, parseEther, parseEventLogs } from "viem";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { eventTicketNftAbi, mapLegacyTierNameToId } from "@/lib/contracts";
+import { LoadingModal } from "@/components/ui/loading-modal";
 
 type BuyTicketButtonProps = {
   tierId: string;
@@ -25,13 +26,13 @@ export function BuyTicketButton({
   const publicClient = usePublicClient();
 
   const [isBuying, setIsBuying] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleBuy() {
     setIsBuying(true);
-    setMessage(null);
-    setIsSuccess(false);
+    setLoadingMessage(null);
+    setError(null);
 
     try {
       if (!walletClient || !publicClient || !address) {
@@ -109,7 +110,7 @@ export function BuyTicketButton({
         ],
       });
 
-      setMessage("Đang chờ xác nhận từ blockchain...");
+      setLoadingMessage("Waiting for blockchain confirmation...");
 
       // Wait for receipt
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -159,12 +160,15 @@ export function BuyTicketButton({
         throw new Error(payload.error ?? "Không thể lưu thông tin vé.");
       }
 
-      setIsSuccess(true);
-      setMessage(`Mua vé thành công! Token #${payload.data.tokenId}`);
+      setLoadingMessage(null);
+      // Success — reload to show updated state
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error("Buy ticket error:", error);
-      const raw = error instanceof Error ? error.message : "Không thể mua vé.";
-      setMessage(raw);
+      const raw =
+        error instanceof Error ? error.message : "Unable to purchase ticket.";
+      setLoadingMessage(null);
+      setError(raw);
     } finally {
       setIsBuying(false);
     }
@@ -180,24 +184,24 @@ export function BuyTicketButton({
         style={{ width: "100%" }}
       >
         {isBuying
-          ? "Đang xử lý..."
+          ? "Processing..."
           : eventContractAddress
-            ? "Mua vé"
-            : "Chưa mở bán"}
+            ? "Buy Ticket"
+            : "Not on sale"}
       </button>
 
-      {message ? (
+      {error ? (
         <p
           style={{
-            marginTop: "var(--space-3)",
-            color: isSuccess
-              ? "var(--color-success-deep)"
-              : "var(--color-error)",
+            marginTop: "var(--space-sm)",
+            color: "var(--color-error)",
           }}
         >
-          {message}
+          {error}
         </p>
       ) : null}
+
+      <LoadingModal show={!!loadingMessage} message={loadingMessage ?? ""} />
     </div>
   );
 }
