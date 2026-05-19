@@ -77,6 +77,7 @@ export default async function MarketplacePage() {
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
               gap: "var(--space-lg)",
+              alignItems: "stretch",
             }}
           >
             {listings.map((listing) => {
@@ -142,7 +143,12 @@ export default async function MarketplacePage() {
                     </div>
 
                     {/* ── Action ── */}
-                    <div style={{ marginTop: "var(--space-lg)" }}>
+                    <div
+                      style={{
+                        marginTop: "auto",
+                        paddingTop: "var(--space-lg)",
+                      }}
+                    >
                       {isSeller ? (
                         <div
                           style={{

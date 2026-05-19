@@ -97,6 +97,7 @@ export default async function OrganizerEventsPage() {
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
               gap: "var(--space-xl)",
+              alignItems: "stretch",
             }}
           >
             {events.map((event) => {
@@ -196,18 +197,25 @@ export default async function OrganizerEventsPage() {
                     </div>
 
                     {/* Manage Button */}
-                    <Link
-                      href={`/organizer/events/${event.id}`}
-                      className="btn-primary"
+                    <div
                       style={{
-                        display: "block",
-                        textAlign: "center",
-                        marginTop: "var(--space-lg)",
-                        textDecoration: "none",
+                        marginTop: "auto",
+                        paddingTop: "var(--space-lg)",
                       }}
                     >
-                      Manage Event
-                    </Link>
+                      <Link
+                        href={`/organizer/events/${event.id}`}
+                        className="btn-primary"
+                        style={{
+                          display: "block",
+                          textAlign: "center",
+                          textDecoration: "none",
+                          padding: "10px var(--space-lg)",
+                        }}
+                      >
+                        Manage Event
+                      </Link>
+                    </div>
                   </div>
                 </article>
               );

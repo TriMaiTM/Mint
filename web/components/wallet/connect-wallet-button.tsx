@@ -271,35 +271,28 @@ export function ConnectWalletButton() {
                   </div>
 
                   {/* Links */}
-                  <div
-                    style={{
-                      borderTop: "1px solid var(--color-hairline)",
-                      padding: "var(--space-md) 0",
-                    }}
-                  >
+                  <div className="wallet-dropdown-info">
                     <a
                       href="/profile"
-                      className="text-body-sm"
+                      className="wallet-dropdown-row"
                       style={{
-                        display: "block",
-                        padding: "var(--space-sm) 0",
                         color: "var(--color-ink)",
                         textDecoration: "none",
+                        padding: "var(--space-xs) 0",
                       }}
                     >
-                      Profile
+                      <span className="text-body-sm">Profile</span>
                     </a>
                     <a
                       href="/my-tickets"
-                      className="text-body-sm"
+                      className="wallet-dropdown-row"
                       style={{
-                        display: "block",
-                        padding: "var(--space-sm) 0",
                         color: "var(--color-ink)",
                         textDecoration: "none",
+                        padding: "var(--space-xs) 0",
                       }}
                     >
-                      My Tickets
+                      <span className="text-body-sm">My Tickets</span>
                     </a>
                   </div>
 

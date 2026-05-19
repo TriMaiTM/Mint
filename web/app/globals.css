@@ -452,6 +452,8 @@ select {
     border-radius: var(--radius-md);
     overflow: hidden;
     padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
 }
 
 .card-large {
@@ -582,6 +584,21 @@ select {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: var(--space-sm);
+    align-items: stretch;
+}
+
+.masonry-grid > a,
+.masonry-grid > article {
+    display: flex;
+    flex-direction: column;
+}
+
+.masonry-grid .card {
+    flex: 1;
+}
+
+.event-card-body {
+    margin-top: auto;
 }
 
 .masonry-item {

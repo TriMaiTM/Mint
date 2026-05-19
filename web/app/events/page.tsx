@@ -291,7 +291,14 @@ export default async function EventsPage({ searchParams }: Props) {
                             }}
                             aria-hidden="true"
                           >
-                            🎫
+                            <span
+                              style={{
+                                fontSize: "24px",
+                                color: "var(--color-stone)",
+                              }}
+                            >
+                              🎫
+                            </span>
                           </div>
                         )}
                         <span className="event-card-badge">Event</span>

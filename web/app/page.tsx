@@ -215,10 +215,10 @@ export default async function HomePage() {
 
           <div className="category-grid">
             {[
-              { name: "Music", emoji: "🎵", bg: "#fef3c7" },
-              { name: "Tech", emoji: "💻", bg: "#dbeafe" },
-              { name: "Food", emoji: "🍕", bg: "#fce7f3" },
-              { name: "Sports", emoji: "⚽", bg: "#d1fae5" },
+              { name: "Music", initial: "M" },
+              { name: "Tech", initial: "T" },
+              { name: "Food", initial: "F" },
+              { name: "Sports", initial: "S" },
             ].map((cat) => (
               <Link
                 key={cat.name}
@@ -230,14 +230,21 @@ export default async function HomePage() {
                   style={{
                     width: "100%",
                     aspectRatio: "4/3",
-                    background: cat.bg,
+                    background: "var(--color-surface-card)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "3rem",
                   }}
                 >
-                  {cat.emoji}
+                  <span
+                    style={{
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                      color: "var(--color-mute)",
+                    }}
+                  >
+                    {cat.initial}
+                  </span>
                 </div>
                 <span className="category-tile-label">{cat.name}</span>
               </Link>
@@ -278,16 +285,20 @@ export default async function HomePage() {
             <div
               style={{
                 flex: 1,
-                background: "var(--color-surface-hover)",
+                background: "var(--color-surface-card)",
                 borderRadius: "var(--radius-lg)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 minHeight: 240,
-                fontSize: "4rem",
               }}
             >
-              🔍
+              <span
+                className="text-display-lg"
+                style={{ color: "var(--color-stone)" }}
+              >
+                01
+              </span>
             </div>
           </div>
 
@@ -315,16 +326,20 @@ export default async function HomePage() {
             <div
               style={{
                 flex: 1,
-                background: "var(--color-surface-hover)",
+                background: "var(--color-surface-card)",
                 borderRadius: "var(--radius-lg)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 minHeight: 240,
-                fontSize: "4rem",
               }}
             >
-              🎟️
+              <span
+                className="text-display-lg"
+                style={{ color: "var(--color-stone)" }}
+              >
+                02
+              </span>
             </div>
           </div>
 
@@ -349,16 +364,20 @@ export default async function HomePage() {
             <div
               style={{
                 flex: 1,
-                background: "var(--color-surface-hover)",
+                background: "var(--color-surface-card)",
                 borderRadius: "var(--radius-lg)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 minHeight: 240,
-                fontSize: "4rem",
               }}
             >
-              ✅
+              <span
+                className="text-display-lg"
+                style={{ color: "var(--color-stone)" }}
+              >
+                03
+              </span>
             </div>
           </div>
         </div>
