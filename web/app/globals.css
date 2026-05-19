@@ -597,10 +597,6 @@ select {
     flex: 1;
 }
 
-.event-card-body {
-    margin-top: auto;
-}
-
 .masonry-item {
     break-inside: avoid;
     border-radius: var(--radius-md);
@@ -682,6 +678,9 @@ select {
 
 .event-card-body {
     padding: var(--space-md) 0 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .event-card-date {

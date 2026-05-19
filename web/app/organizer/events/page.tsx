@@ -120,7 +120,14 @@ export default async function OrganizerEventsPage() {
                     </div>
                   )}
 
-                  <div style={{ padding: "var(--space-lg)" }}>
+                  <div
+                    style={{
+                      padding: "var(--space-lg)",
+                      display: "flex",
+                      flexDirection: "column",
+                      flex: 1,
+                    }}
+                  >
                     {/* Status Row */}
                     <div
                       style={{
