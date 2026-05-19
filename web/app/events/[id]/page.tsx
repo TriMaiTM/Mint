@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatEther } from "viem";
 import { Nav } from "@/components/layout/nav";
 import { BuyTicketButton } from "@/components/tickets/buy-ticket-button";
+import { ShareButton } from "@/components/events/share-button";
 
 type EventDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -90,6 +91,14 @@ export default async function EventDetailPage({
               {event.description ??
                 "The organizer will update event details soon."}
             </p>
+
+            {/* ── Share Button ── */}
+            <div className="mt-lg">
+              <ShareButton
+                eventTitle={event.title}
+                eventUrl={`${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/events/${event.id}`}
+              />
+            </div>
 
             {/* ── Organizer Info ── */}
             <div className="card-feature-soft mt-xl">

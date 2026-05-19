@@ -270,6 +270,39 @@ export function ConnectWalletButton() {
                     </div>
                   </div>
 
+                  {/* Links */}
+                  <div
+                    style={{
+                      borderTop: "1px solid var(--color-hairline)",
+                      padding: "var(--space-md) 0",
+                    }}
+                  >
+                    <a
+                      href="/profile"
+                      className="text-body-sm"
+                      style={{
+                        display: "block",
+                        padding: "var(--space-sm) 0",
+                        color: "var(--color-ink)",
+                        textDecoration: "none",
+                      }}
+                    >
+                      Profile
+                    </a>
+                    <a
+                      href="/my-tickets"
+                      className="text-body-sm"
+                      style={{
+                        display: "block",
+                        padding: "var(--space-sm) 0",
+                        color: "var(--color-ink)",
+                        textDecoration: "none",
+                      }}
+                    >
+                      My Tickets
+                    </a>
+                  </div>
+
                   {/* Sign out */}
                   <div className="wallet-dropdown-footer">
                     <button
