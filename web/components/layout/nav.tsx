@@ -14,6 +14,7 @@ const NAV_LINKS = [
 
 const ORGANIZER_LINKS = [
   { href: "/organizer/events", label: "My Events" },
+  { href: "/organizer/analytics", label: "Analytics" },
   { href: "/organizer/check-in", label: "Check-in" },
 ];
 

@@ -39,7 +39,7 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const session = verifySessionToken(
-      cookieStore.get(getSessionCookieName())?.value
+      cookieStore.get(getSessionCookieName())?.value,
     );
 
     if (!session) {
@@ -57,7 +57,7 @@ export async function GET() {
     if (!me || !isOrganizerRole(me.role)) {
       return NextResponse.json(
         { error: "Organizer role required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -85,7 +85,7 @@ export async function GET() {
     console.error("GET /api/organizer/events failed", error);
     return NextResponse.json(
       { error: "Failed to fetch organizer events" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const session = verifySessionToken(
-      cookieStore.get(getSessionCookieName())?.value
+      cookieStore.get(getSessionCookieName())?.value,
     );
 
     if (!session) {
@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
       startDate?: string;
       endDate?: string;
       maxAttendees?: number;
+      category?: string;
       tiers?: TierInput[];
       tierName?: string;
       tierPrice?: string;
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
     };
 
     const tiers = normalizeTiers(body).filter(
-      (tier) => tier.name || tier.price || tier.maxQuantity || tier.benefits
+      (tier) => tier.name || tier.price || tier.maxQuantity || tier.benefits,
     );
 
     if (!body.title || !body.startDate || !body.endDate || tiers.length === 0) {
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
           error:
             "Missing required fields: title, startDate, endDate, and at least one ticket tier",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -164,8 +165,14 @@ export async function POST(request: NextRequest) {
       if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
         throw new Error(`Tier ${index + 1} has invalid price`);
       }
-      if (typeof maxQuantity !== "number" || !Number.isInteger(maxQuantity) || maxQuantity <= 0) {
-        throw new Error(`Tier ${index + 1} must have a positive integer quantity`);
+      if (
+        typeof maxQuantity !== "number" ||
+        !Number.isInteger(maxQuantity) ||
+        maxQuantity <= 0
+      ) {
+        throw new Error(
+          `Tier ${index + 1} must have a positive integer quantity`,
+        );
       }
 
       return {
@@ -186,6 +193,7 @@ export async function POST(request: NextRequest) {
         startDate: new Date(body.startDate),
         endDate: new Date(body.endDate),
         maxAttendees: body.maxAttendees,
+        category: body.category ?? "General",
         status: "DRAFT",
         chainId: "80002",
         ticketTiers: {
@@ -209,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { error: "Failed to create organizer event" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

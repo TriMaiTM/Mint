@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { sendEmail, generateTicketPurchaseEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +21,10 @@ export async function POST(request: NextRequest) {
       onchainTierId?: number;
     };
     if (!body.tierId) {
-      return NextResponse.json({ error: "tierId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "tierId is required" },
+        { status: 400 },
+      );
     }
 
     const providedTxHash = body.txHash?.trim();
@@ -29,13 +33,22 @@ export async function POST(request: NextRequest) {
       where: { id: body.tierId },
       include: {
         event: {
-          select: { id: true, title: true, contractAddress: true },
+          select: {
+            id: true,
+            title: true,
+            contractAddress: true,
+            startDate: true,
+            venue: true,
+          },
         },
       },
     });
 
     if (!tier) {
-      return NextResponse.json({ error: "Ticket tier not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Ticket tier not found" },
+        { status: 404 },
+      );
     }
 
     if (tier.soldCount >= tier.maxQuantity) {
@@ -45,47 +58,55 @@ export async function POST(request: NextRequest) {
     if (!tier.event.contractAddress) {
       return NextResponse.json(
         { error: "Event is not live on-chain yet" },
-        { status: 412 }
+        { status: 412 },
       );
     }
 
     if (!providedTxHash || !/^0x[a-fA-F0-9]{64}$/.test(providedTxHash)) {
       return NextResponse.json(
         { error: "Valid on-chain txHash is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (typeof body.tokenId !== "number" || body.tokenId <= 0) {
       return NextResponse.json(
         { error: "Valid on-chain tokenId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!Number.isInteger(body.onchainTierId)) {
       return NextResponse.json(
         { error: "Valid minted on-chain tier id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (tier.onchainTierId !== null && body.onchainTierId !== tier.onchainTierId) {
+    if (
+      tier.onchainTierId !== null &&
+      body.onchainTierId !== tier.onchainTierId
+    ) {
       return NextResponse.json(
         { error: "Minted on-chain tier does not match selected draft tier" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.sub } });
     if (!user) {
-      return NextResponse.json({ error: "Session user not found" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Session user not found" },
+        { status: 401 },
+      );
     }
 
     const onchainTokenId = body.tokenId;
 
     const result = await prisma.$transaction(async (tx) => {
-      const latestTier = await tx.ticketTier.findUnique({ where: { id: tier.id } });
+      const latestTier = await tx.ticketTier.findUnique({
+        where: { id: tier.id },
+      });
       if (!latestTier || latestTier.soldCount >= latestTier.maxQuantity) {
         throw new Error("TIER_SOLD_OUT");
       }
@@ -135,6 +156,33 @@ export async function POST(request: NextRequest) {
       return { order, ticket };
     });
 
+    // Send email notification (non-blocking)
+    if (user.email) {
+      const eventDate = tier.event.startDate
+        ? new Date(tier.event.startDate).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "TBD";
+
+      sendEmail({
+        to: user.email,
+        subject: `🎫 Ticket Confirmed - ${tier.event.title}`,
+        html: generateTicketPurchaseEmail({
+          eventTitle: tier.event.title,
+          tierName: tier.name,
+          tokenId: result.ticket.tokenId,
+          eventDate,
+          venue: tier.event.venue || "TBD",
+          txHash: providedTxHash,
+        }),
+      }).catch((err) => console.error("Failed to send purchase email:", err));
+    }
+
     return NextResponse.json({
       data: {
         orderId: result.order.id,
@@ -154,10 +202,13 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message === "TOKEN_ID_ALREADY_USED") {
       return NextResponse.json(
         { error: "tokenId already exists for this event" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
-    return NextResponse.json({ error: "Failed to buy ticket" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to buy ticket" },
+      { status: 500 },
+    );
   }
 }

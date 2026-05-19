@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { Nav } from "@/components/layout/nav";
 import { CopyAddressButton } from "./copy-address-button";
+import { EmailSettings } from "@/components/profile/email-settings";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -250,7 +251,19 @@ export default async function ProfilePage() {
               🎯 My Events
             </Link>
           )}
+          {isOrganizer && (
+            <Link
+              href="/organizer/analytics"
+              className="btn-secondary"
+              style={{ textDecoration: "none" }}
+            >
+              📊 Analytics
+            </Link>
+          )}
         </div>
+
+        {/* ── Email Settings ── */}
+        <EmailSettings currentEmail={user.email} />
 
         {/* ── Purchase History ── */}
         <section style={{ marginTop: "var(--space-section)" }}>

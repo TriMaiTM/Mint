@@ -173,6 +173,44 @@ export default async function EventDetailPage({
           </aside>
         </div>
 
+        {/* ── Location Map ── */}
+        {event.venue && (
+          <section style={{ marginBottom: "var(--space-xxl)" }}>
+            <h2 className="text-heading-xl mb-lg">Location</h2>
+            <div
+              style={{
+                display: "flex",
+                gap: "var(--space-xl)",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ flex: "1 1 300px" }}>
+                <p className="text-heading-md">{event.venue}</p>
+                <p className="text-body-sm text-muted mt-sm">{event.title}</p>
+              </div>
+              <div
+                style={{
+                  flex: "0 0 auto",
+                  width: "min(400px, 100%)",
+                }}
+              >
+                <iframe
+                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(event.venue)}`}
+                  width="100%"
+                  height="300"
+                  style={{
+                    border: 0,
+                    borderRadius: "var(--radius-md)",
+                  }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── Ticket Tiers ── */}
         <section style={{ marginTop: "var(--space-section)" }}>
           <h2 className="text-heading-lg mb-xl">Available Tickets</h2>

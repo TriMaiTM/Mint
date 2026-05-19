@@ -222,7 +222,7 @@ export default async function HomePage() {
             ].map((cat) => (
               <Link
                 key={cat.name}
-                href={`/events?category=${cat.name.toLowerCase()}`}
+                href={`/events/category/${cat.name.toLowerCase()}`}
                 className="category-tile"
                 style={{ textDecoration: "none", color: "inherit" }}
               >

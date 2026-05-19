@@ -1,102 +1,122 @@
-# TicketNFT - Execution Plan & Implementation Notes
+# TicketNFT — Execution Plan & Status
 
-## 1) Muc tieu hien tai
-- Khoi tao monorepo co web app va docs.
-- Hoan thanh landing hero section theo visual direction da chot.
-- Dat nen tang de tiep tuc Phase 1 -> Phase 5 trong implementation_plan.md.
+## Dự án
 
-## 2) Da hoan thanh trong dot nay
-- Tao ung dung Next.js (TypeScript, App Router, ESLint) tai thu muc web.
-- Chinh sua landing page thanh full-screen hero voi:
-  - Nen den tuyet doi (#000000).
-  - Video background fullscreen, loop, muted, autoplay, playsInline.
-  - Lop overlay den 50% de tang do doc.
-  - Navbar theo dung bo cuc: logo + 4 nav links (an tren mobile) + Join Waitlist button.
-  - Hero center content: badge, heading gradient text, subtitle, CTA button.
-  - Responsive behavior theo md breakpoint (heading scale down, nav links collapse, top padding mobile/desktop).
-- Tao thu muc docs de luu ke hoach va luu y.
-- Setup contracts workspace voi Hardhat + TypeScript + OpenZeppelin.
-- Implement smart contracts baseline:
-  - EventTicketNFT.sol (ERC-721 + ERC-2981, mint, useTicket, transfer control, withdraw)
-  - EventFactory.sol (factory tao event contract, quan ly danh sach event)
-- Them test baseline trong contracts/test va da run pass.
-- Hoan thanh wallet stack core trong web:
-  - Wagmi + Viem + RainbowKit + TanStack Query providers
-  - Navbar da tich hop connect wallet button
-  - Them `web/.env.example` cho WalletConnect project id
-- Hoan thanh wallet auth MVP (backend API):
-  - `POST /api/auth/nonce` tao challenge message
-  - `POST /api/auth/verify` verify signature va set session cookie
-  - `GET /api/auth/me` lay session user
-  - `POST /api/auth/logout` clear session
-  - Them model `AuthNonce` trong Prisma schema
-- Hoan thanh wallet auth tren UI:
-  - Connect button tu dong ho tro sign-in bang nonce/signature
-  - Co sign-out control tren navbar
-- Them `prisma:seed` + script seed event demo de test nhanh API/events
+Hệ thống bán vé sự kiện NFT — Organizer tạo event, publish on-chain, user mua vé NFT, bán lại trên marketplace, check-in bằng QR.
 
-## 3) Luu y ky thuat quan trong
-- Font:
-  - Theme hien tai dung General Sans qua Fontshare CSS import.
-  - Neu production can toi uu, nen self-host font files va preload.
-- Video background:
-  - Nen co fallback poster image va fallback gradient background khi mang cham.
-  - Nen doi link video sang static asset CDN do team quan ly de tranh rot URL.
-- Accessibility:
-  - Cac nut va nav links can co destination route thuc te trong sprint tiep theo.
-  - Can bo sung focus-visible styles cho keyboard navigation.
+## Tech Stack
 
-## 4) Ke hoach tiep theo theo phase
+| Layer | Technology |
+|---|---|
+| Smart Contracts | Solidity 0.8.26, Hardhat, OpenZeppelin v5 |
+| Blockchain | Sepolia Testnet (Ethereum) |
+| Frontend | Next.js 16, React 19, TypeScript |
+| Web3 | Wagmi v2, Viem v2, RainbowKit v2 |
+| Database | Supabase PostgreSQL, Prisma 6 |
+| Auth | Wallet signature (EIP-191) |
+| Design | Pinterest-inspired (Inter font, warm cream palette) |
 
-### Phase 1 (Contracts Foundation)
-- [x] Setup Hardhat + TypeScript + OpenZeppelin trong thu muc contracts.
-- [x] Implement EventTicketNFT (ERC-721 + ERC-2981) + unit tests.
-- [x] Implement EventFactory + tests.
-- [x] Tao script deploy local trong contracts/scripts/deploy.ts.
-- [x] Chuan bi script deploy testnet (Polygon Amoy uu tien).
-- [x] Bo sung test cho royaltyInfo, maxSupply edge cases, withdraw flow.
-- [x] Add TicketMarketplace.sol skeleton (bat dau cho Phase 4).
-- [x] Chay deploy testnet Amoy voi credentials that su (.env) va luu contract address.
+## Trạng thái hiện tại
 
-### Phase 2 (Web Core)
-- [x] Setup wallet stack: Wagmi + Viem + RainbowKit.
-- [x] Setup Prisma + Supabase PostgreSQL config (DATABASE_URL).
-- [x] Chay prisma:push tren Supabase project va verify bang API events/auth.
-- [x] Setup auth strategy ban dau theo wallet sign-in (MVP).
-- [x] Dung base design system va reusable UI components (landing + wallet state components).
+### ✅ Phase 1: Smart Contracts (100%)
 
-### Phase 3 (Core Product Flows)
-- [x] Event detail + ticket tiers UI flow (buy action placeholder).
-- [x] Browse events page (live data from `/api/events`).
-- [x] Organizer create event + publish on-chain flow.
-- [x] Buy ticket flow strict on-chain: bat buoc mint tx + tokenId, khong fallback DB-only.
-- [x] My tickets inventory page.
-- [ ] QR generation for ticket check-in.
+- [x] EventTicketNFT.sol — ERC-721 + ERC-2981, multi-tier, useTicket, transfer control, withdraw
+- [x] EventFactory.sol — Factory pattern, tạo event contract riêng biệt
+- [x] TicketMarketplace.sol — Secondary market, platform fee, royalty enforcement, max price limit (3x)
+- [x] Unit tests — 20 tests pass
+- [x] Deploy script — Sepolia testnet
+- [x] getTierPrice(), getTokenTierId() getters
 
-### Phase 4 (Marketplace + Check-in)
-- Implement TicketMarketplace.sol + tests.
-- Build marketplace UI va listing lifecycle.
-- Build QR check-in flow (verify + mark used).
+### ✅ Phase 2: Web Core (100%)
 
-### Phase 5 (Polish + Deploy)
-- Hardening UX/loading/error states.
-- Security review (contracts + API).
-- E2E tests + deployment to Vercel and mainnet-ready pipeline.
+- [x] Next.js 16 + TypeScript + App Router
+- [x] Wagmi + Viem + RainbowKit + TanStack Query
+- [x] Prisma schema + Supabase PostgreSQL
+- [x] Wallet auth (nonce → verify → session cookie)
+- [x] Role-based access (USER / ORGANIZER / ADMIN)
 
-## 5) Quy uoc lam viec de giam rui ro
-- Moi feature blockchain deu can:
-  - Unit test contracts.
-  - Integration test front-to-contract.
-  - Manual runbook test tren testnet.
-- Tach bien moi truong ro rang:
-  - .env.local (web)
-  - .env (contracts)
-- Khong merge PR neu chua qua lint, type-check, test.
+### ✅ Phase 3: Core Product Flows (100%)
 
-## 6) Decision log tam thoi (co the cap nhat)
-- Chain uu tien: Polygon Amoy (testnet) -> Polygon PoS (mainnet).
-- Wallet strategy MVP: vi wallet truyen thong truoc, account abstraction sau.
-- Theme landing: dark cinematic, video-first, high contrast typography.
-- Amoy deploy (2026-04-25): EventFactory = 0x38fBD0a1f2DA7d05B768f67c17B7B88d1F19C57e.
-- Database strategy (2026-04-26): Supabase-first, khong uu tien local PostgreSQL.
-- Strict buy policy (2026-04-26): event phai duoc go-live on-chain (co contractAddress) truoc khi mua; them scripts `contracts/scripts/createEvent.ts` va `web/scripts/link-event-contract.mjs`.
+- [x] Create event (multi-tier, category, venue, banner)
+- [x] Publish on-chain (server-side, bypass MetaMask RPC issues)
+- [x] Buy ticket (MetaMask direct `eth_sendTransaction`)
+- [x] My Tickets + QR code generation
+- [x] Marketplace (list, buy, cancel — all on-chain + DB sync)
+- [x] Check-in (on-chain `useTicket()` + DB update)
+- [x] Withdraw funds from contract
+- [x] Resale with price limit (max 3x original, enforced in smart contract)
+
+### ✅ Phase 4: UI/UX (100%)
+
+- [x] Pinterest-inspired design system (CSS variables, Inter font)
+- [x] Landing page (Hero + Search + Featured Events + Categories + How It Works)
+- [x] Events page (Search + Filter chips + Masonry grid + Pagination)
+- [x] Event detail (Banner + Info + Organizer + Tiers + Location Map + Share)
+- [x] Marketplace (Listed tickets + Buy button)
+- [x] My Tickets (Ticket grid + QR + Resale modal)
+- [x] Profile page (Purchase history + Stats)
+- [x] Organizer pages (My Events, Create Event, Manage Event, Attendees, Check-in)
+- [x] Wallet dropdown (Address copy, Role badge, Network, Profile link, Sign out)
+- [x] Loading modal (Spinner + message for all blockchain operations)
+- [x] Toast notifications (Success/Error/Info)
+- [x] Skeleton components
+- [x] Responsive design (4→3→2→1 columns)
+- [x] Category system (Music, Tech, Food, Sports, Art, Business, General)
+- [x] Category pages with banner + filtered events
+- [x] Google Maps embed on event detail
+- [x] Event edit form
+- [x] Equal-height cards with aligned buttons
+
+### ✅ Phase 5: Documentation (100%)
+
+- [x] README.md (707 lines)
+- [x] Execution plan
+- [x] Implementation plan
+- [x] Run guide
+- [x] Demo script
+- [x] AI agent handoff prompt
+
+## Smart Contracts (Sepolia)
+
+| Contract | Address |
+|---|---|
+| EventFactory | `0x316654424537D288670070454f87bf3547341f6C` |
+| TicketMarketplace | `0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA` |
+
+## Pages
+
+| Page | URL | Status |
+|---|---|---|
+| Landing | `/` | ✅ |
+| Events | `/events` | ✅ |
+| Event Detail | `/events/[id]` | ✅ |
+| Category | `/events/category/[name]` | ✅ |
+| Marketplace | `/marketplace` | ✅ |
+| My Tickets | `/my-tickets` | ✅ |
+| Profile | `/profile` | ✅ |
+| My Events | `/organizer/events` | ✅ |
+| Create Event | `/organizer/events/new` | ✅ |
+| Manage Event | `/organizer/events/[id]` | ✅ |
+| Attendees | `/organizer/events/[id]/attendees` | ✅ |
+| Check-in | `/organizer/check-in` | ✅ |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/nonce` | Create sign-in challenge |
+| POST | `/api/auth/verify` | Verify signature, set session |
+| GET | `/api/auth/me` | Get current user |
+| POST | `/api/auth/logout` | Clear session |
+| GET | `/api/events` | List published events |
+| POST | `/api/organizer/events` | Create event |
+| POST | `/api/organizer/publish` | Publish event on-chain (server-side) |
+| POST | `/api/events/[id]/go-live` | Link contract to event |
+| POST | `/api/events/[id]/status` | Update event status |
+| POST | `/api/events/[id]/edit` | Edit event details |
+| POST | `/api/tickets/mint` | Mint ticket (server-side) |
+| POST | `/api/tickets/buy` | Sync ticket purchase to DB |
+| POST | `/api/tickets/check-in` | Check-in attendee (on-chain + DB) |
+| POST | `/api/marketplace/list` | List ticket for sale |
+| POST | `/api/marketplace/buy` | Buy listed ticket |
+| POST | `/api/marketplace/cancel` | Cancel listing (on-chain + DB) |

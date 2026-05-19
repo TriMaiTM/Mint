@@ -21,6 +21,7 @@ type CreatePayload = {
   endDate: string;
   maxAttendees: number;
   bannerImage: string;
+  category: string;
   tiers: TierForm[];
 };
 
@@ -59,6 +60,7 @@ export default function OrganizerCreateEventPage() {
     endDate: "",
     maxAttendees: 500,
     bannerImage: "",
+    category: "General",
     tiers: [createDefaultTier(0)],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -339,6 +341,38 @@ export default function OrganizerCreateEventPage() {
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label
+                  className="text-body-strong"
+                  style={{ display: "block", marginBottom: "var(--space-xs)" }}
+                  htmlFor="category"
+                >
+                  Category
+                </label>
+                <select
+                  id="category"
+                  className="input-text"
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm((v) => ({ ...v, category: e.target.value }))
+                  }
+                >
+                  {[
+                    "General",
+                    "Music",
+                    "Tech",
+                    "Food",
+                    "Sports",
+                    "Art",
+                    "Business",
+                  ].map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
