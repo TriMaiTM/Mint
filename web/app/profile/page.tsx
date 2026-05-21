@@ -90,6 +90,7 @@ export default async function ProfilePage() {
   }
 
   const isOrganizer = user.role === "ORGANIZER" || user.role === "ADMIN";
+  const isAdmin = user.role === "ADMIN";
 
   /* ── Compute stats ── */
   const totalTickets = user.tickets.length;
@@ -244,20 +245,20 @@ export default async function ProfilePage() {
           </Link>
           {isOrganizer && (
             <Link
-              href="/organizer/events"
+              href="/organizer"
               className="btn-secondary"
               style={{ textDecoration: "none" }}
             >
-              🎯 My Events
+              💼 Organizer Panel
             </Link>
           )}
-          {isOrganizer && (
+          {isAdmin && (
             <Link
-              href="/organizer/analytics"
+              href="/admin"
               className="btn-secondary"
               style={{ textDecoration: "none" }}
             >
-              📊 Analytics
+              🛡️ Admin Panel
             </Link>
           )}
         </div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
-import { Nav } from "@/components/layout/nav";
+import { redirect } from "next/navigation";
 
 export default async function OrganizerEventsPage() {
   const cookieStore = await cookies();
@@ -11,20 +11,7 @@ export default async function OrganizerEventsPage() {
   );
 
   if (!session) {
-    return (
-      <>
-        <Nav />
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">My Events</h1>
-          <p className="text-body-md text-muted mb-lg">
-            Please sign in with your organizer wallet to continue.
-          </p>
-          <Link href="/" className="btn-secondary">
-            Back to Home
-          </Link>
-        </main>
-      </>
-    );
+    redirect("/");
   }
 
   const me = await prisma.user.findUnique({
@@ -37,20 +24,7 @@ export default async function OrganizerEventsPage() {
   });
 
   if (!me || (me.role !== "ORGANIZER" && me.role !== "ADMIN")) {
-    return (
-      <>
-        <Nav />
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">Access Denied</h1>
-          <p className="text-body-md text-muted mb-lg">
-            This account does not have organizer permission.
-          </p>
-          <Link href="/events" className="btn-secondary">
-            Browse Events
-          </Link>
-        </main>
-      </>
-    );
+    redirect("/");
   }
 
   const events = await prisma.event.findMany({
@@ -65,11 +39,8 @@ export default async function OrganizerEventsPage() {
 
   return (
     <>
-      {/* ── Navigation ── */}
-      <Nav />
-
       {/* ── Page Content ── */}
-      <main className="container section-gap">
+      <div style={{ maxWidth: "1200px" }}>
         <header style={{ marginBottom: "var(--space-xxl)" }}>
           <h1 className="text-display-lg">My Events</h1>
           <p className="text-body-md text-muted mt-sm">
@@ -229,7 +200,7 @@ export default async function OrganizerEventsPage() {
             })}
           </div>
         )}
-      </main>
+      </div>
     </>
   );
 }

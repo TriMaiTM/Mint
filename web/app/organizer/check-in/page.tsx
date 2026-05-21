@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { QRScanner } from "@/components/organizer/qr-scanner";
-import { Nav } from "@/components/layout/nav";
 
 type TicketDetails = {
   id: string;
@@ -157,16 +156,13 @@ export default function CheckInPage() {
   };
 
   return (
-    <div style={{ backgroundColor: "#0b0b0c", minHeight: "100vh", color: "#e4e4e7" }}>
-      {/* ── Navigation ── */}
-      <Nav />
-
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       {/* ── Main Container ── */}
-      <main 
+      <div 
         className="container" 
         style={{ 
           maxWidth: "640px", 
-          padding: "var(--space-xxl) var(--space-md)",
+          padding: "var(--space-md) 0",
           display: "flex", 
           flexDirection: "column", 
           alignItems: "center" 
@@ -483,7 +479,7 @@ export default function CheckInPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

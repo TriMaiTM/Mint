@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
-import { Nav } from "@/components/layout/nav";
 import { CheckInButton } from "./check-in-button";
 import { ExportCsvButton } from "@/components/organizer/export-csv-button";
 
@@ -19,20 +18,7 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
   );
 
   if (!session) {
-    return (
-      <>
-        <Nav />
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">Attendees</h1>
-          <p className="text-body-md text-muted mb-lg">
-            Please sign in with your organizer wallet to continue.
-          </p>
-          <Link href="/" className="btn-secondary">
-            Back to Home
-          </Link>
-        </main>
-      </>
-    );
+    redirect("/");
   }
 
   const me = await prisma.user.findUnique({
@@ -41,20 +27,7 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
   });
 
   if (!me || (me.role !== "ORGANIZER" && me.role !== "ADMIN")) {
-    return (
-      <>
-        <Nav />
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">Access Denied</h1>
-          <p className="text-body-md text-muted mb-lg">
-            This account does not have organizer permission.
-          </p>
-          <Link href="/events" className="btn-secondary">
-            Browse Events
-          </Link>
-        </main>
-      </>
-    );
+    redirect("/");
   }
 
   // Verify the event belongs to this organizer
@@ -84,9 +57,7 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
 
   return (
     <>
-      <Nav />
-
-      <main className="container section-gap">
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         {/* ── Header ── */}
         <header style={{ marginBottom: "var(--space-xxl)", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "var(--space-md)" }}>
           <div>
@@ -273,7 +244,7 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
             ))}
           </div>
         )}
-      </main>
+      </div>
     </>
   );
 }

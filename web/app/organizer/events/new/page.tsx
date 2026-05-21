@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletAuth } from "@/hooks/use-wallet-auth";
-import { Nav } from "@/components/layout/nav";
 
 type TierForm = {
   name: string;
@@ -130,63 +129,45 @@ export default function OrganizerCreateEventPage() {
     }
   }
 
-  /* ── Shared nav ── */
-  const nav = <Nav />;
-
   /* ── Loading state ── */
   if (isLoadingSession) {
     return (
-      <>
-        {nav}
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <p className="text-body-md text-muted">Loading wallet session...</p>
-        </main>
-      </>
+      <div style={{ textAlign: "center", padding: "var(--space-xxl) 0" }}>
+        <p className="text-body-md text-muted">Loading wallet session...</p>
+      </div>
     );
   }
 
   /* ── Not authenticated ── */
   if (!isAuthenticated) {
     return (
-      <>
-        {nav}
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">Create Event</h1>
-          <p className="text-body-md text-muted mb-lg">
-            Please connect and sign in with your wallet first.
-          </p>
-          <Link href="/" className="btn-secondary">
-            Back to Home
-          </Link>
-        </main>
-      </>
+      <div style={{ textAlign: "center", padding: "var(--space-xxl) 0" }}>
+        <h1 className="text-heading-xl mb-md">Create Event</h1>
+        <p className="text-body-md text-muted mb-lg">
+          Please connect and sign in with your wallet first.
+        </p>
+      </div>
     );
   }
 
   /* ── Not organizer ── */
   if (!isOrganizer) {
     return (
-      <>
-        {nav}
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">Access Denied</h1>
-          <p className="text-body-md text-muted mb-lg">
-            This account does not have organizer permission.
-          </p>
-          <Link href="/events" className="btn-secondary">
-            Browse Events
-          </Link>
-        </main>
-      </>
+      <div style={{ textAlign: "center", padding: "var(--space-xxl) 0" }}>
+        <h1 className="text-heading-xl mb-md" style={{ color: "var(--color-error)" }}>
+          Access Denied
+        </h1>
+        <p className="text-body-md text-muted mb-lg">
+          This account does not have organizer permission.
+        </p>
+      </div>
     );
   }
 
   /* ── Main form ── */
   return (
     <>
-      {nav}
-
-      <main className="container section-gap" style={{ maxWidth: "720px" }}>
+      <div style={{ maxWidth: "720px", margin: "0 auto" }}>
         <header style={{ marginBottom: "var(--space-xxl)" }}>
           <h1 className="text-display-lg">Create Event</h1>
           <p className="text-body-md text-muted mt-sm">
@@ -580,7 +561,7 @@ export default function OrganizerCreateEventPage() {
             )}
           </div>
         </form>
-      </main>
+      </div>
     </>
   );
 }

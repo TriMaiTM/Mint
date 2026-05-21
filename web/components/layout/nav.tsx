@@ -13,9 +13,7 @@ const NAV_LINKS = [
 ];
 
 const ORGANIZER_LINKS = [
-  { href: "/organizer/events", label: "My Events" },
-  { href: "/organizer/analytics", label: "Analytics" },
-  { href: "/organizer/check-in", label: "Check-in" },
+  { href: "/organizer", label: "Organizer Panel" },
 ];
 
 export function Nav() {
@@ -23,6 +21,7 @@ export function Nav() {
   const { user, isAuthenticated } = useWalletAuth();
   const isOrganizer =
     isAuthenticated && (user?.role === "ORGANIZER" || user?.role === "ADMIN");
+  const isAdmin = isAuthenticated && user?.role === "ADMIN";
 
   return (
     <nav className="nav-primary">
@@ -98,6 +97,21 @@ export function Nav() {
                 </Link>
               );
             })}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              style={{
+                fontSize: "15px",
+                fontWeight: pathname.startsWith("/admin") ? 600 : 400,
+                color: pathname.startsWith("/admin") ? "var(--color-ink)" : "var(--color-mute)",
+                textDecoration: "none",
+                transition: "color 0.15s",
+              }}
+            >
+              Admin Panel
+            </Link>
+          )}
         </div>
 
         <div

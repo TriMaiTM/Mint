@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
-import { Nav } from "@/components/layout/nav";
 import { EventSettingsForm } from "@/components/organizer/event-settings-form";
 import { EventEditForm } from "@/components/organizer/event-edit-form";
 import { PublishEventButton } from "@/components/organizer/publish-event-button";
@@ -23,20 +22,7 @@ export default async function ManageEventPage({ params }: Props) {
   );
 
   if (!session) {
-    return (
-      <>
-        <Nav />
-        <main className="container section-gap" style={{ textAlign: "center" }}>
-          <h1 className="text-heading-xl mb-md">Manage Event</h1>
-          <p className="text-body-md text-muted mb-lg">
-            Please sign in with your organizer wallet.
-          </p>
-          <Link href="/" className="btn-secondary">
-            Back to Home
-          </Link>
-        </main>
-      </>
-    );
+    redirect("/");
   }
 
   const event = await prisma.event.findUnique({
@@ -73,9 +59,7 @@ export default async function ManageEventPage({ params }: Props) {
 
   return (
     <ToastProvider>
-      <Nav />
-
-      <main className="container section-gap">
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         {/* Header */}
         <header style={{ marginBottom: "var(--space-xxl)" }}>
           <Link
@@ -291,7 +275,7 @@ export default async function ManageEventPage({ params }: Props) {
             />
           </section>
         )}
-      </main>
+      </div>
     </ToastProvider>
   );
 }
