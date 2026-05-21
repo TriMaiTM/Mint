@@ -5,6 +5,7 @@ import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { Nav } from "@/components/layout/nav";
 import { TicketQR } from "@/components/tickets/ticket-qr";
 import { ListTicketButton } from "@/components/tickets/list-ticket-button";
+import { TransferTicketButton } from "@/components/tickets/transfer-ticket-button";
 
 function formatDate(value: Date): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -249,6 +250,14 @@ export default async function MyTicketsPage() {
                                   tierPrice={ticket.tier.price.toString()}
                                   tierName={ticket.tier.name}
                                 />
+                                <div style={{ marginTop: "var(--space-sm)" }}>
+                                  <TransferTicketButton
+                                    ticketId={ticket.id}
+                                    tokenId={ticket.tokenId}
+                                    contractAddress={ticket.event.contractAddress}
+                                    tierName={ticket.tier.name}
+                                  />
+                                </div>
                               </div>
                             )}
                         </>

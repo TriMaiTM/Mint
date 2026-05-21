@@ -7,6 +7,7 @@ import {
   createPublicClient,
   http,
   encodeFunctionData,
+  verifyMessage,
 } from "viem";
 import { sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { ticketId, eventId, tokenId } = await req.json();
+    const { ticketId, eventId, tokenId, timestamp, signature } = await req.json();
 
     if (!ticketId || !eventId || tokenId === undefined) {
       return NextResponse.json(
@@ -47,6 +48,8 @@ export async function POST(req: Request) {
       where: { id: ticketId },
       include: {
         event: true,
+        owner: true,
+        tier: true,
       },
     });
 
@@ -71,6 +74,39 @@ export async function POST(req: Request) {
     if (ticket.isUsed) {
       return NextResponse.json(
         { error: "Ticket has already been used" },
+        { status: 400 },
+      );
+    }
+
+    // --- Dynamic QR Code Signature Verification ---
+    if (!timestamp || !signature) {
+      return NextResponse.json(
+        { error: "Yêu cầu chữ ký xác thực ví và mốc thời gian để check-in bảo mật." },
+        { status: 400 },
+      );
+    }
+
+    // Check expiration (60 seconds)
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const timeDiff = Math.abs(nowSeconds - Number(timestamp));
+    if (timeDiff > 60) {
+      return NextResponse.json(
+        { error: "Mã QR đã hết hạn. Vui lòng yêu cầu khách hàng làm mới mã QR." },
+        { status: 400 },
+      );
+    }
+
+    // Verify signature
+    const expectedMessage = `Verify ownership of Ticket #${tokenId} at timestamp: ${timestamp}`;
+    const isSignatureValid = await verifyMessage({
+      address: ticket.owner.walletAddress as `0x${string}`,
+      message: expectedMessage,
+      signature: signature as `0x${string}`,
+    });
+
+    if (!isSignatureValid) {
+      return NextResponse.json(
+        { error: "Chữ ký số không hợp lệ. Khách hàng quét mã QR không phải là chủ sở hữu vé." },
         { status: 400 },
       );
     }
@@ -139,6 +175,24 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      ticket: {
+        id: ticket.id,
+        tokenId: ticket.tokenId,
+        isUsed: true,
+        usedAt: new Date(),
+        owner: {
+          name: ticket.owner.name,
+          email: ticket.owner.email,
+          walletAddress: ticket.owner.walletAddress,
+        },
+        tier: {
+          name: ticket.tier.name,
+          price: ticket.tier.price,
+        },
+        event: {
+          title: ticket.event.title,
+        },
+      },
       ...(onchainWarning ? { warning: onchainWarning } : {}),
     });
   } catch (error) {

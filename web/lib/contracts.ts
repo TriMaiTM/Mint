@@ -148,6 +148,17 @@ export const eventTicketNftAbi = [
     ],
     anonymous: false,
   },
+  {
+    type: "function",
+    name: "safeTransferFrom",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 export const eventFactoryAbi = [

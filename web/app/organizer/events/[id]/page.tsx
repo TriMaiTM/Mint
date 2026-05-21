@@ -8,6 +8,7 @@ import { EventSettingsForm } from "@/components/organizer/event-settings-form";
 import { EventEditForm } from "@/components/organizer/event-edit-form";
 import { PublishEventButton } from "@/components/organizer/publish-event-button";
 import { WithdrawButton } from "@/components/organizer/withdraw-button";
+import { CouponsManager } from "@/components/organizer/coupons-manager";
 import { ToastProvider } from "@/components/ui/toast";
 
 type Props = { params: Promise<{ id: string }> };
@@ -200,6 +201,12 @@ export default async function ManageEventPage({ params }: Props) {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Coupons */}
+        <section style={{ marginBottom: "var(--space-xxl)" }}>
+          <h2 className="text-heading-xl mb-lg">Coupons Management</h2>
+          <CouponsManager eventId={event.id} />
         </section>
 
         {/* Actions */}

@@ -5,6 +5,7 @@ import {
   http,
   encodeFunctionData,
   decodeEventLog,
+  parseEther,
 } from "viem";
 import { sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
@@ -12,6 +13,7 @@ import { cookies } from "next/headers";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { eventTicketNftAbi } from "@/lib/contracts";
+import { sendEmail, generateTicketPurchaseEmail } from "@/lib/email";
 
 /**
  * POST /api/tickets/mint
@@ -44,6 +46,8 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json()) as {
       tierId?: string;
+      couponCode?: string;
+      txHash?: string;
     };
 
     if (!body.tierId) {
@@ -60,6 +64,13 @@ export async function POST(request: NextRequest) {
             title: true,
             contractAddress: true,
             organizerId: true,
+            startDate: true,
+            venue: true,
+            organizer: {
+              select: {
+                walletAddress: true,
+              },
+            },
           },
         },
       },
@@ -90,10 +101,51 @@ export async function POST(request: NextRequest) {
     // Get user wallet address
     const user = await prisma.user.findUnique({
       where: { id: session.sub },
-      select: { id: true, walletAddress: true },
+      select: { id: true, walletAddress: true, email: true },
     });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Coupon logic
+    let discountAmount = 0;
+    let finalPrice = Number(tier.price);
+    let couponId: string | null = null;
+
+    if (body.couponCode) {
+      const cleanCode = body.couponCode.trim().toUpperCase();
+      const coupon = await prisma.coupon.findUnique({
+        where: {
+          eventId_code: {
+            eventId: tier.eventId,
+            code: cleanCode,
+          },
+        },
+      });
+
+      if (!coupon) {
+        return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
+      }
+      if (!coupon.isActive) {
+        return NextResponse.json({ error: "Coupon is inactive" }, { status: 400 });
+      }
+      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+        return NextResponse.json({ error: "Coupon has expired" }, { status: 400 });
+      }
+      if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+        return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
+      }
+
+      couponId = coupon.id;
+      if (coupon.discountType === "PERCENTAGE") {
+        discountAmount = (finalPrice * Number(coupon.discountValue)) / 100;
+      } else {
+        discountAmount = Number(coupon.discountValue);
+      }
+      if (discountAmount > finalPrice) {
+        discountAmount = finalPrice;
+      }
+      finalPrice = Math.max(finalPrice - discountAmount, 0);
     }
 
     const rpcUrl = getChainRpc();
@@ -109,6 +161,49 @@ export async function POST(request: NextRequest) {
       transport: http(rpcUrl),
     });
 
+    // Verify transaction if payment is required (finalPrice > 0 and coupon was used)
+    const isDiscounted = body.couponCode && finalPrice > 0;
+    if (isDiscounted) {
+      if (!body.txHash) {
+        return NextResponse.json({ error: "Missing txHash for discounted payment" }, { status: 400 });
+      }
+
+      // Check if txHash has already been used to prevent replay attacks
+      const existingOrder = await prisma.order.findFirst({
+        where: { txHash: body.txHash },
+      });
+      const existingTicket = await prisma.ticket.findFirst({
+        where: { txHash: body.txHash },
+      });
+      if (existingOrder || existingTicket) {
+        return NextResponse.json({ error: "Giao dịch đã được sử dụng trước đó (Replay attack)" }, { status: 409 });
+      }
+
+      try {
+        const tx = await publicClient.getTransaction({ hash: body.txHash as `0x${string}` });
+        const txReceipt = await publicClient.getTransactionReceipt({ hash: body.txHash as `0x${string}` });
+
+        if (txReceipt.status !== "success") {
+          return NextResponse.json({ error: "Giao dịch blockchain thất bại hoặc chưa thành công" }, { status: 400 });
+        }
+
+        const expectedOrganizerAddress = tier.event.organizer.walletAddress;
+        if (!tx.to || tx.to.toLowerCase() !== expectedOrganizerAddress.toLowerCase()) {
+          return NextResponse.json({ error: "Người nhận trong giao dịch không khớp với ví ban tổ chức" }, { status: 400 });
+        }
+
+        const expectedValue = parseEther(finalPrice.toFixed(6));
+        if (tx.value < expectedValue) {
+          return NextResponse.json({
+            error: `Số tiền thanh toán không khớp. Yêu cầu: ${finalPrice.toFixed(6)} POL, Thực tế nhận: ${Number(tx.value) / 1e18} POL`
+          }, { status: 400 });
+        }
+      } catch (err) {
+        console.error("Blockchain transaction validation failed:", err);
+        return NextResponse.json({ error: "Không thể xác minh giao dịch blockchain" }, { status: 400 });
+      }
+    }
+
     // Call organizerMint to mint NFT to user's address
     const tokenURI = `ipfs://ticketnft/${tier.id}/${Date.now()}`;
 
@@ -118,14 +213,14 @@ export async function POST(request: NextRequest) {
       args: [user.walletAddress as `0x${string}`, tier.onchainTierId, tokenURI],
     });
 
-    const txHash = await walletClient.sendTransaction({
+    const mintTxHash = await walletClient.sendTransaction({
       to: tier.event.contractAddress as `0x${string}`,
       data: mintData,
       gas: BigInt(500_000),
     });
 
     const receipt = await publicClient.waitForTransactionReceipt({
-      hash: txHash,
+      hash: mintTxHash,
     });
 
     // Parse TicketMinted event to get tokenId
@@ -170,14 +265,22 @@ export async function POST(request: NextRequest) {
         data: { soldCount: { increment: 1 } },
       });
 
+      if (couponId) {
+        await tx.coupon.update({
+          where: { id: couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
       const order = await tx.order.create({
         data: {
           userId: session.sub,
           eventId: tier.eventId,
-          totalAmount: tier.price,
+          couponId,
+          totalAmount: finalPrice,
           paymentMethod: "CRYPTO",
           status: "CONFIRMED",
-          txHash,
+          txHash: body.txHash ?? mintTxHash,
         },
       });
 
@@ -187,7 +290,7 @@ export async function POST(request: NextRequest) {
           tierId: tier.id,
           ownerId: session.sub,
           tokenId,
-          txHash,
+          txHash: mintTxHash,
           status: "MINTED",
           isUsed: false,
           qrCode: `${tier.eventId}:${tokenId}`,
@@ -197,12 +300,39 @@ export async function POST(request: NextRequest) {
       return { order, ticket };
     });
 
+    // Send email notification (non-blocking)
+    if (user.email) {
+      const eventDate = tier.event.startDate
+        ? new Date(tier.event.startDate).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "TBD";
+
+      sendEmail({
+        to: user.email,
+        subject: `🎫 Ticket Confirmed - ${tier.event.title}`,
+        html: generateTicketPurchaseEmail({
+          eventTitle: tier.event.title,
+          tierName: tier.name,
+          tokenId: result.ticket.tokenId,
+          eventDate,
+          venue: tier.event.venue || "TBD",
+          txHash: body.txHash ?? mintTxHash,
+        }),
+      }).catch((err) => console.error("Failed to send purchase email:", err));
+    }
+
     return NextResponse.json({
       data: {
         orderId: result.order.id,
         ticketId: result.ticket.id,
         tokenId: result.ticket.tokenId,
-        txHash,
+        txHash: body.txHash ?? mintTxHash,
       },
     });
   } catch (error) {

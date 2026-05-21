@@ -7,19 +7,33 @@ import { eventTicketNftAbi, mapLegacyTierNameToId } from "@/lib/contracts";
 import { LoadingModal } from "@/components/ui/loading-modal";
 
 type BuyTicketButtonProps = {
+  eventId: string;
   tierId: string;
   tierName: string;
   tierPrice: string;
   onchainTierId: number | null;
   eventContractAddress: string | null;
+  organizerWalletAddress: string;
+};
+
+type CouponData = {
+  couponId: string;
+  isValid: boolean;
+  originalPrice: number;
+  discountAmount: number;
+  discountedPrice: number;
+  discountType: "PERCENTAGE" | "FIXED";
+  discountValue: number;
 };
 
 export function BuyTicketButton({
+  eventId,
   tierId,
   tierName,
   tierPrice,
   onchainTierId,
   eventContractAddress,
+  organizerWalletAddress,
 }: BuyTicketButtonProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -28,6 +42,83 @@ export function BuyTicketButton({
   const [isBuying, setIsBuying] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Coupon states
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponData, setCouponData] = useState<CouponData | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    setIsValidatingCoupon(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/tickets/validate-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
+          tierId,
+          code: couponInput.trim(),
+        }),
+      });
+      const payload = await res.json();
+      if (res.ok && payload.data?.isValid) {
+        setCouponData(payload.data);
+        setAppliedCoupon(couponInput.trim().toUpperCase());
+      } else {
+        setCouponError(payload.error ?? "Invalid coupon code");
+        setCouponData(null);
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setCouponError("Error validating coupon");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setCouponInput("");
+    setAppliedCoupon(null);
+    setCouponData(null);
+    setCouponError(null);
+  }
+
+  async function handleFreeMint() {
+    setIsBuying(true);
+    setLoadingMessage("Processing free ticket claim...");
+    setError(null);
+    try {
+      const response = await fetch("/api/tickets/mint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tierId,
+          couponCode: appliedCoupon,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error ?? "Không thể nhận vé miễn phí.");
+      }
+
+      setLoadingMessage(null);
+      setSuccess("Claimed free ticket successfully! Redirecting...");
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to claim free ticket");
+      setLoadingMessage(null);
+    } finally {
+      setIsBuying(false);
+    }
+  }
 
   async function handleBuy() {
     setIsBuying(true);
@@ -41,39 +132,25 @@ export function BuyTicketButton({
       if (!eventContractAddress) {
         throw new Error("Sự kiện chưa được đưa lên blockchain.");
       }
+      if (!organizerWalletAddress) {
+        throw new Error("Không tìm thấy địa chỉ ví của ban tổ chức.");
+      }
 
       const targetTierId = onchainTierId ?? mapLegacyTierNameToId(tierName);
+      const isDiscounted = couponData && couponData.discountedPrice > 0;
 
-      // Encode function call
-      const callData = encodeFunctionData({
-        abi: eventTicketNftAbi,
-        functionName: "mint",
-        args: [targetTierId, `ipfs://ticketnft/${tierId}/${Date.now()}`],
-      });
-
-      // Call MetaMask directly via request() — bypasses viem's RPC calls
-      const provider = await walletClient.getChainId().then(() => {
-        // Access the underlying EIP-1193 provider
-        return (
-          (walletClient as any).transport?.value ||
-          (walletClient as any).request
-        );
-      });
-
-      // Use window.ethereum directly for maximum reliability
+      // Ensure MetaMask uses Sepolia
       const ethereum = (window as any).ethereum;
       if (!ethereum) {
         throw new Error("MetaMask not found");
       }
 
-      // Ensure MetaMask uses a reliable RPC (switch to Sepolia if not already)
       try {
         await ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0xAA36A7" }], // Sepolia
+          params: [{ chainId: "0xAA36A7" }],
         });
       } catch {
-        // Chain not added yet, try adding it
         try {
           await ethereum.request({
             method: "wallet_addEthereumChain",
@@ -86,10 +163,7 @@ export function BuyTicketButton({
                   symbol: "ETH",
                   decimals: 18,
                 },
-                rpcUrls: [
-                  "https://eth-sepolia.g.alchemy.com/v2/" +
-                    (process.env.NEXT_PUBLIC_ALCHEMY_KEY ?? ""),
-                ],
+                rpcUrls: ["https://eth-sepolia.g.alchemy.com/v2/" + (process.env.NEXT_PUBLIC_ALCHEMY_KEY ?? "")],
                 blockExplorerUrls: ["https://sepolia.etherscan.io"],
               },
             ],
@@ -97,76 +171,119 @@ export function BuyTicketButton({
         } catch {}
       }
 
-      const txHash = await ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: address,
-            to: eventContractAddress,
-            data: callData,
-            value: "0x" + parseEther(tierPrice).toString(16),
-            gas: "0x493E0", // 300000
-          },
-        ],
-      });
+      let txHash: `0x${string}`;
+      if (isDiscounted) {
+        // Send native tokens directly to the organizer
+        setLoadingMessage("Vui lòng xác nhận giao dịch chuyển tiền trực tiếp trong MetaMask...");
+        const sendAmount = couponData.discountedPrice.toString();
+        txHash = await ethereum.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              from: address,
+              to: organizerWalletAddress,
+              value: "0x" + parseEther(sendAmount).toString(16),
+              gas: "0x5208", // 21000 gas for simple transfer
+            },
+          ],
+        });
+      } else {
+        // Encode function call for standard mint
+        setLoadingMessage("Vui lòng xác nhận giao dịch mua vé trong MetaMask...");
+        const callData = encodeFunctionData({
+          abi: eventTicketNftAbi,
+          functionName: "mint",
+          args: [targetTierId, `ipfs://ticketnft/${tierId}/${Date.now()}`],
+        });
 
-      setLoadingMessage("Waiting for blockchain confirmation...");
+        txHash = await ethereum.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              from: address,
+              to: eventContractAddress,
+              data: callData,
+              value: "0x" + parseEther(tierPrice).toString(16),
+              gas: "0x493E0", // 300000
+            },
+          ],
+        });
+      }
 
-      // Wait for receipt
+      setLoadingMessage("Đang chờ xác nhận từ blockchain...");
+
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
       });
 
-      // Parse TicketMinted event
-      const mintedLogs = parseEventLogs({
-        abi: eventTicketNftAbi,
-        eventName: "TicketMinted",
-        logs: receipt.logs,
-      });
+      if (isDiscounted) {
+        setLoadingMessage("Đang hoàn tất cấp vé từ hệ thống...");
+        // Call server-side mint with txHash
+        const response = await fetch("/api/tickets/mint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tierId,
+            couponCode: appliedCoupon,
+            txHash,
+          }),
+        });
 
-      const minted = mintedLogs.find((log) =>
-        log.args?.to
-          ? log.args.to.toLowerCase() === address.toLowerCase()
-          : false,
-      );
+        const payload = (await response.json()) as {
+          data?: { tokenId: number };
+          error?: string;
+        };
 
-      const tokenId = minted?.args?.tokenId
-        ? Number(minted.args.tokenId)
-        : undefined;
+        if (!response.ok || !payload.data) {
+          throw new Error(payload.error ?? "Không thể lưu thông tin vé sau khi thanh toán.");
+        }
+      } else {
+        // Parse TicketMinted event
+        const mintedLogs = parseEventLogs({
+          abi: eventTicketNftAbi,
+          eventName: "TicketMinted",
+          logs: receipt.logs,
+        });
 
-      if (!tokenId) {
-        throw new Error("Không thể xác nhận tokenId từ blockchain.");
-      }
+        const minted = mintedLogs.find((log) =>
+          log.args?.to ? log.args.to.toLowerCase() === address.toLowerCase() : false
+        );
 
-      // Sync with DB
-      const response = await fetch("/api/tickets/buy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          tierId,
-          txHash,
-          tokenId,
-          onchainTierId: targetTierId,
-        }),
-      });
+        const tokenId = minted?.args?.tokenId ? Number(minted.args.tokenId) : undefined;
 
-      const payload = (await response.json()) as {
-        data?: { tokenId: number };
-        error?: string;
-      };
+        if (!tokenId) {
+          throw new Error("Không thể xác nhận tokenId từ blockchain.");
+        }
 
-      if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "Không thể lưu thông tin vé.");
+        // Sync with DB
+        const response = await fetch("/api/tickets/buy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            tierId,
+            txHash,
+            tokenId,
+            onchainTierId: targetTierId,
+          }),
+        });
+
+        const payload = (await response.json()) as {
+          data?: { tokenId: number };
+          error?: string;
+        };
+
+        if (!response.ok || !payload.data) {
+          throw new Error(payload.error ?? "Không thể lưu thông tin vé.");
+        }
       }
 
       setLoadingMessage(null);
-      // Success — reload to show updated state
-      setTimeout(() => window.location.reload(), 1000);
+      setSuccess("Mua vé thành công! Đang chuyển hướng...");
+      setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       console.error("Buy ticket error:", error);
-      const raw =
-        error instanceof Error ? error.message : "Unable to purchase ticket.";
+      const raw = error instanceof Error ? error.message : "Không thể mua vé.";
       setLoadingMessage(null);
       setError(raw);
     } finally {
@@ -174,32 +291,148 @@ export function BuyTicketButton({
     }
   }
 
-  return (
-    <div>
-      <button
-        className="btn-primary"
-        onClick={handleBuy}
-        type="button"
-        disabled={isBuying || !eventContractAddress}
-        style={{ width: "100%" }}
-      >
-        {isBuying
-          ? "Processing..."
-          : eventContractAddress
-            ? "Buy Ticket"
-            : "Not on sale"}
-      </button>
+  const isFree = couponData && couponData.discountedPrice === 0;
 
-      {error ? (
-        <p
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+      {/* Coupon input */}
+      {!appliedCoupon ? (
+        <div style={{ display: "flex", gap: "var(--space-xs)" }}>
+          <input
+            type="text"
+            placeholder="Mã giảm giá"
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+            style={{
+              flex: 1,
+              padding: "6px 12px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--color-hairline)",
+              fontSize: "0.85rem",
+              background: "var(--color-canvas)",
+              color: "inherit",
+            }}
+          />
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleApplyCoupon}
+            disabled={isValidatingCoupon || !couponInput.trim()}
+            style={{ padding: "6px 12px", fontSize: "0.85rem", borderRadius: "var(--radius-md)" }}
+          >
+            {isValidatingCoupon ? "..." : "Áp dụng"}
+          </button>
+        </div>
+      ) : (
+        <div
           style={{
-            marginTop: "var(--space-sm)",
-            color: "var(--color-error)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "6px 12px",
+            backgroundColor: "rgba(46, 125, 50, 0.1)",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid rgba(46, 125, 50, 0.3)",
+            fontSize: "0.85rem",
           }}
         >
+          <span style={{ color: "green", fontWeight: "bold" }}>
+            🎟️ {appliedCoupon} (-
+            {couponData?.discountType === "PERCENTAGE"
+              ? `${couponData.discountValue}%`
+              : `${couponData?.discountValue} POL`}
+            )
+          </span>
+          <button
+            type="button"
+            onClick={handleRemoveCoupon}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--color-error)",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Gỡ
+          </button>
+        </div>
+      )}
+
+      {couponError && (
+        <p style={{ fontSize: "0.8rem", color: "var(--color-error)", margin: 0 }}>{couponError}</p>
+      )}
+
+      {/* Pricing info display if coupon applied */}
+      {couponData && (
+        <div style={{ fontSize: "0.9rem", color: "var(--color-text-body)" }}>
+          {isFree ? (
+            <p style={{ color: "green", fontWeight: "bold", margin: 0 }}>Vé hoàn toàn miễn phí! 🎉</p>
+          ) : (
+            <p style={{ margin: 0 }}>
+              Giá sau giảm: <strong>{couponData.discountedPrice.toFixed(4)} POL</strong> (Giảm {couponData.discountAmount.toFixed(4)} POL)
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Main Action Button */}
+      {isFree ? (
+        <button
+          className="btn-primary"
+          onClick={handleFreeMint}
+          type="button"
+          disabled={isBuying}
+          style={{ width: "100%", backgroundColor: "green" }}
+        >
+          {isBuying ? "Processing..." : "Claim Free Ticket"}
+        </button>
+      ) : (
+        <button
+          className="btn-primary"
+          onClick={handleBuy}
+          type="button"
+          disabled={isBuying || !eventContractAddress}
+          style={{ width: "100%" }}
+        >
+          {isBuying ? "Processing..." : eventContractAddress ? "Buy Ticket" : "Not on sale"}
+        </button>
+      )}
+
+      {/* Display messages */}
+      {error && (
+        <p style={{ marginTop: "var(--space-xs)", color: "var(--color-error)", fontSize: "0.85rem" }}>
           {error}
         </p>
-      ) : null}
+      )}
+      {success && (
+        <p style={{ marginTop: "var(--space-xs)", color: "green", fontSize: "0.85rem", fontWeight: "bold" }}>
+          {success}
+        </p>
+      )}
+
+      {/* MetaMask Explanation Note */}
+      {!isFree && (
+        <div
+          style={{
+            marginTop: "var(--space-xs)",
+            fontSize: "0.8rem",
+            color: "var(--color-text-muted, #71717a)",
+            backgroundColor: "var(--color-surface-soft, rgba(255, 255, 255, 0.03))",
+            padding: "10px 14px",
+            borderRadius: "var(--radius-md, 8px)",
+            border: "1px solid var(--color-hairline, rgba(255, 255, 255, 0.08))",
+            lineHeight: "1.4",
+          }}
+        >
+          <span style={{ fontWeight: "bold", display: "block", marginBottom: "4px", color: "var(--color-text-body, #e4e4e7)" }}>
+            💡 Lưu ý về hiển thị giá trên MetaMask:
+          </span>
+          Khi thực hiện giao dịch, MetaMask sẽ hiển thị số tiền thanh toán chính xác là{" "}
+          <strong>{(couponData ? couponData.discountedPrice : Number(tierPrice)).toFixed(4)} POL</strong>.
+          Dòng chữ USD (ví dụ <em>-$0.0292</em>) hiển thị bên dưới chỉ là giá trị quy đổi ước tính của MetaMask dựa trên tỷ giá thị trường, không phải số lượng POL thực tế bị trừ. Hãy an tâm là giao dịch chỉ trừ đúng số POL của vé.
+        </div>
+      )}
 
       <LoadingModal show={!!loadingMessage} message={loadingMessage ?? ""} />
     </div>

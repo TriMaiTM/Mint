@@ -239,11 +239,13 @@ export default async function EventDetailPage({
                   </p>
                   <div style={{ marginTop: "var(--space-lg)" }}>
                     <BuyTicketButton
+                      eventId={event.id}
                       tierId={tier.id}
                       tierName={tier.name}
                       tierPrice={tier.price.toString()}
                       onchainTierId={tier.onchainTierId}
                       eventContractAddress={event.contractAddress}
+                      organizerWalletAddress={event.organizer.walletAddress}
                     />
                   </div>
                 </div>

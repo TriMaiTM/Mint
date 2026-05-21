@@ -85,6 +85,7 @@ model Event {
   tickets     Ticket[]
   orders      Order[]
   listings    Listing[]
+  coupons     Coupon[]
 }
 
 model TicketTier {
@@ -131,6 +132,7 @@ model Order {
   id            String        @id @default(cuid())
   userId        String
   eventId       String
+  couponId      String?
   totalAmount   Decimal       @db.Decimal(18, 6)
   txHash        String?
   paymentMethod PaymentMethod @default(CRYPTO)
@@ -138,8 +140,28 @@ model Order {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Restrict)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  coupon  Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  eventId       String
+  code          String
+  discountType  String    // "PERCENTAGE" or "FIXED"
+  discountValue Decimal   @db.Decimal(18, 6)
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orders        Order[]
+
+  @@unique([eventId, code])
 }
 
 model AuthNonce {
