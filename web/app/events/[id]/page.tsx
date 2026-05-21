@@ -42,6 +42,12 @@ export default async function EventDetailPage({
       ticketTiers: {
         orderBy: { price: "asc" },
       },
+      agenda: {
+        orderBy: { createdAt: "asc" },
+      },
+      faqs: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -207,6 +213,89 @@ export default async function EventDetailPage({
                   loading="lazy"
                 />
               </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Lịch trình sự kiện (Event Agenda) ── */}
+        {event.agenda && event.agenda.length > 0 && (
+          <section style={{ marginBottom: "var(--space-xxl)", borderTop: "1px solid var(--color-hairline)", paddingTop: "var(--space-xl)" }}>
+            <h2 className="text-heading-xl mb-lg">Lịch trình sự kiện</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0", position: "relative", paddingLeft: "24px", borderLeft: "2px solid var(--color-hairline-soft)" }}>
+              {event.agenda.map((item) => (
+                <div key={item.id} style={{ position: "relative", marginBottom: "var(--space-xl)" }}>
+                  {/* Circle Indicator on the line */}
+                  <div style={{
+                    position: "absolute",
+                    left: "-31px",
+                    top: "4px",
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    backgroundColor: "var(--color-primary)",
+                    border: "2px solid var(--color-canvas)",
+                    boxShadow: "0 0 0 2px var(--color-hairline-soft)"
+                  }} />
+                  
+                  <div>
+                    <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--color-primary)", textTransform: "uppercase" }}>
+                      {item.time}
+                    </span>
+                    <h3 className="text-heading-md" style={{ marginTop: "4px" }}>
+                      {item.title}
+                    </h3>
+                    {item.speaker && (
+                      <span className="chip" style={{ display: "inline-block", fontSize: "11px", padding: "2px 8px", marginTop: "var(--space-xs)" }}>
+                        🎙️ Diễn giả: {item.speaker}
+                      </span>
+                    )}
+                    {item.description && (
+                      <p className="text-body-sm text-muted mt-sm" style={{ lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Câu hỏi thường gặp (FAQs) ── */}
+        {event.faqs && event.faqs.length > 0 && (
+          <section style={{ marginBottom: "var(--space-xxl)", borderTop: "1px solid var(--color-hairline)", paddingTop: "var(--space-xl)" }}>
+            <h2 className="text-heading-xl mb-lg">Câu hỏi thường gặp (FAQ)</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+              {event.faqs.map((faq) => (
+                <details key={faq.id} className="card-feature-soft" style={{
+                  padding: "var(--space-md) var(--space-lg)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-hairline)",
+                  cursor: "pointer",
+                }}>
+                  <summary style={{
+                    fontWeight: "600",
+                    fontSize: "16px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    listStyle: "none",
+                    outline: "none",
+                  }}>
+                    <span>❓ {faq.question}</span>
+                    <span style={{ fontSize: "12px", transition: "transform 0.2s" }}>▼</span>
+                  </summary>
+                  <p className="text-body-sm text-muted mt-md" style={{
+                    lineHeight: 1.6,
+                    whiteSpace: "pre-line",
+                    borderTop: "1px solid var(--color-hairline)",
+                    paddingTop: "var(--space-md)",
+                    cursor: "default"
+                  }}>
+                    {faq.answer}
+                  </p>
+                </details>
+              ))}
             </div>
           </section>
         )}

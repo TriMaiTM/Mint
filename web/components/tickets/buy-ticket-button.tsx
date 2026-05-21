@@ -172,6 +172,8 @@ export function BuyTicketButton({
       }
 
       let txHash: `0x${string}`;
+      let tokenURI = `ipfs://ticketnft/${tierId}/${Date.now()}`;
+
       if (isDiscounted) {
         // Send native tokens directly to the organizer
         setLoadingMessage("Vui lòng xác nhận giao dịch chuyển tiền trực tiếp trong MetaMask...");
@@ -188,12 +190,30 @@ export function BuyTicketButton({
           ],
         });
       } else {
+        // Prepare metadata first on IPFS
+        setLoadingMessage("Đang chuẩn bị metadata vé trên IPFS...");
+        try {
+          const prepareRes = await fetch("/api/tickets/prepare-metadata", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tierId }),
+          });
+          if (prepareRes.ok) {
+            const result = await prepareRes.json();
+            if (result.data?.tokenURI) {
+              tokenURI = result.data.tokenURI;
+            }
+          }
+        } catch (err) {
+          console.error("Failed to prepare IPFS metadata, falling back to mock URI:", err);
+        }
+
         // Encode function call for standard mint
         setLoadingMessage("Vui lòng xác nhận giao dịch mua vé trong MetaMask...");
         const callData = encodeFunctionData({
           abi: eventTicketNftAbi,
           functionName: "mint",
-          args: [targetTierId, `ipfs://ticketnft/${tierId}/${Date.now()}`],
+          args: [targetTierId, tokenURI],
         });
 
         txHash = await ethereum.request({
@@ -265,6 +285,7 @@ export function BuyTicketButton({
             txHash,
             tokenId,
             onchainTierId: targetTierId,
+            tokenURI,
           }),
         });
 

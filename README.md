@@ -2,6 +2,11 @@
 
 > A decentralized event ticketing platform where event organizers can create events and sell NFT tickets, attendees can purchase and trade tickets on a secondary marketplace, and check-in is verified via blockchain.
 
+### ✨ New Features (v1.1)
+- **Email Notifications** — Purchase confirmations, listing alerts, sale notifications via Resend
+- **Analytics Dashboard** — Revenue charts, ticket stats, event performance for organizers
+- **Profile Email Settings** — Users can add email to receive notifications
+
 ---
 
 ## Table of Contents
@@ -40,12 +45,13 @@ TicketNFT reimagines event ticketing by minting each ticket as an ERC-721 NFT. T
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|-------|------------|
 | Smart Contracts | Solidity 0.8.26, Hardhat, OpenZeppelin v5 |
 | Blockchain | Sepolia Testnet (Ethereum L2) |
 | Frontend | Next.js 16, TypeScript, Wagmi, Viem, RainbowKit |
 | Database | PostgreSQL (Supabase), Prisma ORM |
 | Auth | Wallet-based (EIP-191 signature) |
+| Email | Resend |
 | Design | Pinterest-inspired design system (Inter font) |
 
 ---

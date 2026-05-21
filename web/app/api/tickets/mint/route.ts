@@ -14,6 +14,7 @@ import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { eventTicketNftAbi } from "@/lib/contracts";
 import { sendEmail, generateTicketPurchaseEmail } from "@/lib/email";
+import { uploadMetadataToIPFS } from "@/lib/pinata";
 
 /**
  * POST /api/tickets/mint
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
             organizerId: true,
             startDate: true,
             venue: true,
+            bannerImage: true,
             organizer: {
               select: {
                 walletAddress: true,
@@ -204,8 +206,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Read current nextTokenId from contract to predict the tokenId of the ticket being minted
+    let currentNextTokenId = BigInt(0);
+    try {
+      currentNextTokenId = (await publicClient.readContract({
+        address: tier.event.contractAddress as `0x${string}`,
+        abi: eventTicketNftAbi,
+        functionName: "nextTokenId",
+      })) as bigint;
+    } catch (err) {
+      console.error("Failed to read nextTokenId from contract before mint:", err);
+    }
+    const expectedTokenId = Number(currentNextTokenId) + 1;
+
     // Call organizerMint to mint NFT to user's address
-    const tokenURI = `ipfs://ticketnft/${tier.id}/${Date.now()}`;
+    const metadataName = `${tier.event.title} - ${tier.name} #${expectedTokenId}`;
+    const metadataDescription = `Vé NFT chính thức của sự kiện "${tier.event.title}". Hạng vé: ${tier.name}. Cung cấp quyền tham dự và xác thực on-chain.`;
+    const eventUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/events/${tier.event.id}`;
+    
+    const attributes = [
+      { trait_type: "Sự kiện", value: tier.event.title },
+      { trait_type: "Hạng vé", value: tier.name },
+      { trait_type: "Địa điểm", value: tier.event.venue || "TBD" },
+      { trait_type: "Thời gian bắt đầu", value: tier.event.startDate ? new Date(tier.event.startDate).toLocaleString("vi-VN") : "TBD" },
+    ];
+
+    const ipfsUri = await uploadMetadataToIPFS({
+      name: metadataName,
+      description: metadataDescription,
+      image: tier.event.bannerImage || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4",
+      external_url: eventUrl,
+      attributes,
+    });
+
+    const tokenURI = ipfsUri ?? `ipfs://ticketnft/${tier.id}/${expectedTokenId}/${Date.now()}`;
 
     const mintData = encodeFunctionData({
       abi: eventTicketNftAbi,
@@ -327,12 +361,15 @@ export async function POST(request: NextRequest) {
       }).catch((err) => console.error("Failed to send purchase email:", err));
     }
 
+    console.log(`[Mint API] Ticket minted successfully! Token ID: ${tokenId}, TxHash: ${mintTxHash}, TokenURI: ${tokenURI}`);
+
     return NextResponse.json({
       data: {
         orderId: result.order.id,
         ticketId: result.ticket.id,
         tokenId: result.ticket.tokenId,
         txHash: body.txHash ?? mintTxHash,
+        tokenURI,
       },
     });
   } catch (error) {

@@ -86,6 +86,8 @@ model Event {
   orders      Order[]
   listings    Listing[]
   coupons     Coupon[]
+  agenda      AgendaItem[]
+  faqs        FAQ[]
 }
 
 model TicketTier {
@@ -192,4 +194,28 @@ model Listing {
 
   @@index([eventId, status])
   @@index([sellerId, status])
+}
+
+model AgendaItem {
+  id          String   @id @default(cuid())
+  eventId     String
+  time        String   // e.g. "09:00 AM - 10:30 AM"
+  title       String
+  description String?
+  speaker     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model FAQ {
+  id          String   @id @default(cuid())
+  eventId     String
+  question    String
+  answer      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }

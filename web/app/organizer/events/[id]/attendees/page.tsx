@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { Nav } from "@/components/layout/nav";
 import { CheckInButton } from "./check-in-button";
+import { ExportCsvButton } from "@/components/organizer/export-csv-button";
 
 type AttendeesPageProps = {
   params: Promise<{ id: string }>;
@@ -70,7 +71,7 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
     where: { eventId: id },
     include: {
       tier: { select: { name: true, price: true } },
-      owner: { select: { walletAddress: true } },
+      owner: { select: { walletAddress: true, name: true, email: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -87,27 +88,32 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
 
       <main className="container section-gap">
         {/* ── Header ── */}
-        <header style={{ marginBottom: "var(--space-xxl)" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-sm)",
-              marginBottom: "var(--space-md)",
-            }}
-          >
-            <Link
-              href={`/organizer/events/${id}`}
-              className="text-body-sm text-muted"
-              style={{ textDecoration: "none" }}
+        <header style={{ marginBottom: "var(--space-xxl)", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "var(--space-md)" }}>
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-sm)",
+                marginBottom: "var(--space-md)",
+              }}
             >
-              ← Back to Event
-            </Link>
+              <Link
+                href={`/organizer/events/${id}`}
+                className="text-body-sm text-muted"
+                style={{ textDecoration: "none" }}
+              >
+                ← Back to Event
+              </Link>
+            </div>
+            <h1 className="text-display-lg">Attendees</h1>
+            <p className="text-body-md text-muted mt-sm">
+              {event.title} — Manage ticket holders and check-in status.
+            </p>
           </div>
-          <h1 className="text-display-lg">Attendees</h1>
-          <p className="text-body-md text-muted mt-sm">
-            {event.title} — Manage ticket holders and check-in status.
-          </p>
+          <div>
+            <ExportCsvButton tickets={tickets} eventTitle={event.title} />
+          </div>
         </header>
 
         {/* ── Stats ── */}
@@ -176,14 +182,14 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "2fr 1fr 1fr 1fr 1.5fr 140px",
+                gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1.5fr 140px",
                 gap: "var(--space-md)",
                 padding: "var(--space-md) var(--space-xl)",
                 background: "var(--color-surface-soft)",
                 borderBottom: "1px solid var(--color-hairline)",
               }}
             >
-              <span className="text-body-sm-strong text-muted">Wallet</span>
+              <span className="text-body-sm-strong text-muted">Khách hàng</span>
               <span className="text-body-sm-strong text-muted">Tier</span>
               <span className="text-body-sm-strong text-muted">Token ID</span>
               <span className="text-body-sm-strong text-muted">Status</span>
@@ -197,23 +203,33 @@ export default async function AttendeesPage({ params }: AttendeesPageProps) {
                 key={ticket.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "2fr 1fr 1fr 1fr 1.5fr 140px",
+                  gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1.5fr 140px",
                   gap: "var(--space-md)",
                   padding: "var(--space-md) var(--space-xl)",
                   alignItems: "center",
                   borderBottom: "1px solid var(--color-hairline-soft)",
                 }}
               >
-                {/* Wallet */}
-                <span
-                  className="text-body-sm"
-                  style={{
-                    fontFamily: "monospace",
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {ticket.owner.walletAddress}
-                </span>
+                {/* Wallet & Owner Info */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {ticket.owner.name && (
+                    <span className="text-body-sm-strong">{ticket.owner.name}</span>
+                  )}
+                  {ticket.owner.email && (
+                    <span className="text-body-xs text-muted" style={{ fontSize: "12px" }}>{ticket.owner.email}</span>
+                  )}
+                  <span
+                    className="text-body-xs text-muted"
+                    style={{
+                      fontFamily: "monospace",
+                      wordBreak: "break-all",
+                      fontSize: "11px",
+                      opacity: 0.8
+                    }}
+                  >
+                    {ticket.owner.walletAddress}
+                  </span>
+                </div>
 
                 {/* Tier */}
                 <span className="text-body-sm">{ticket.tier.name}</span>

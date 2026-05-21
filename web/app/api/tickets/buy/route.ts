@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       txHash?: string;
       tokenId?: number;
       onchainTierId?: number;
+      tokenURI?: string;
     };
     if (!body.tierId) {
       return NextResponse.json(
@@ -183,6 +184,8 @@ export async function POST(request: NextRequest) {
       }).catch((err) => console.error("Failed to send purchase email:", err));
     }
 
+    console.log(`[Buy API] Ticket registered successfully! Token ID: ${result.ticket.tokenId}, TxHash: ${providedTxHash}, TokenURI: ${body.tokenURI || "N/A"}`);
+
     return NextResponse.json({
       data: {
         orderId: result.order.id,
@@ -190,6 +193,7 @@ export async function POST(request: NextRequest) {
         eventId: result.ticket.eventId,
         tokenId: result.ticket.tokenId,
         txHash: result.ticket.txHash,
+        tokenURI: body.tokenURI || null,
       },
     });
   } catch (error) {

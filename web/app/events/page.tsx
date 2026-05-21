@@ -54,20 +54,20 @@ export default async function EventsPage({ searchParams }: Props) {
   const currentPage = Math.max(1, Number(params.page) || 1);
 
   /* ── Build Prisma where clause ── */
-  const where: Record<string, unknown> = {
+  const where: Record<string, any> = {
     contractAddress: { not: null },
   };
 
   if (query) {
-    where.title = { contains: query, mode: "insensitive" };
+    where.OR = [
+      { title: { contains: query, mode: "insensitive" } },
+      { venue: { contains: query, mode: "insensitive" } },
+    ];
   }
 
-  // NOTE: The Event model currently has no `category` field.
-  // When added, uncomment the block below to enable DB-level filtering:
-  //
-  // if (activeCategory !== "all") {
-  //   where.category = activeCategory;
-  // }
+  if (activeCategory !== "all") {
+    where.category = { equals: activeCategory, mode: "insensitive" };
+  }
 
   /* ── Fetch one extra page to know if "Load more" should show ── */
   const events = await prisma.event.findMany({
