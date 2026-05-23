@@ -1,220 +1,85 @@
-# TicketNFT — Execution Plan & Status
+# TicketNFT — Kế hoạch triển khai & Trạng thái Dự án
 
-## Dự án
+Tài liệu này tổng hợp toàn bộ các tính năng đã hoàn thiện của dự án **TicketNFT** và danh sách những điểm cần phát triển tiếp theo.
 
-Hệ thống bán vé sự kiện NFT — Organizer tạo event, publish on-chain, user mua vé NFT, bán lại trên marketplace, check-in bằng QR.
+---
 
-## Tech Stack
+## 1. Tech Stack Hiện Tại
 
-| Layer | Technology |
+| Tầng | Công nghệ sử dụng |
 |---|---|
-| Smart Contracts | Solidity 0.8.26, Hardhat, OpenZeppelin v5 |
-| Blockchain | Sepolia Testnet (Ethereum) |
-| Frontend | Next.js 16, React 19, TypeScript |
-| Web3 | Wagmi v2, Viem v2, RainbowKit v2 |
-| Database | Supabase PostgreSQL, Prisma 6 |
-| Auth | Wallet signature (EIP-191) |
-| Email | Resend |
-| Design | Pinterest-inspired (Inter font, warm cream palette) |
+| **Smart Contracts** | Solidity 0.8.26, Hardhat, OpenZeppelin v5 |
+| **Blockchain Network** | Sepolia Testnet (Ethereum / L2 Rollups) |
+| **Frontend Web** | Next.js 15+, React 19, TypeScript |
+| **Web3 Client** | Wagmi v2, Viem v2, RainbowKit v2 |
+| **Cơ sở dữ liệu** | Supabase PostgreSQL, Prisma 6 |
+| **Xác thực (Auth)** | Ký ví điện tử offline (chuẩn EIP-191) + Token phiên lưu ở Cookie |
+| **Hệ thống Email** | Resend API |
+| **Thiết kế & Giao diện** | Giao diện Dark Mode cao cấp, Glassmorphism, CSS nguyên bản (Vanilla CSS) |
 
-## Trạng thái hiện tại
+---
+
+## 2. Bảng Theo Dõi Tiến Độ Chi Tiết
 
 ### ✅ Phase 1: Smart Contracts (100%)
+*   [x] **EventTicketNFT.sol:** Hỗ trợ bán vé nhiều hạng (multi-tier), kiểm soát quyền chuyển nhượng (`setTransferable`), cơ chế soát vé (`useTicket`), rút doanh thu (`withdraw`). Tích hợp chuẩn ERC-2981 để cấu hình tiền bản quyền (royalty).
+*   [x] **EventFactory.sol:** Hợp đồng nhà máy giúp deploy tự động các hợp đồng vé riêng biệt cho từng sự kiện.
+*   [x] **TicketMarketplace.sol:** Thị trường mua bán vé thứ cấp. Thu phí nền tảng (Platform fee) 2.5%, chia phí tác quyền (Royalty) 5.0% cho organizer. Khống chế giá bán lại tối đa bằng 3 lần giá mua gốc.
+*   [x] **Unit Tests:** Viết và chạy thành công bộ 20 tests kiểm tra đầy đủ logic nghiệp vụ của các hợp đồng.
+*   [x] **Deploy Scripts:** Hoàn thành script deploy tự động lên Sepolia testnet.
 
-- [x] EventTicketNFT.sol — ERC-721 + ERC-2981, multi-tier, useTicket, transfer control, withdraw
-- [x] EventFactory.sol — Factory pattern, tạo event contract riêng biệt
-- [x] TicketMarketplace.sol — Secondary market, platform fee, royalty enforcement, max price limit (3x)
-- [x] Unit tests — 20 tests pass
-- [x] Deploy script — Sepolia testnet
-- [x] getTierPrice(), getTokenTierId() getters
+### ✅ Phase 2: Hệ thống Xác thực & Quyền hạn (100%)
+*   [x] **Auth Nonce:** Tạo thử thách chữ ký số (`/api/auth/nonce`) để chống tấn công phát lại (Replay attack).
+*   [x] **Verify Signature:** Xác minh chữ ký ví phía server (`/api/auth/verify`), tạo JWT/session token lưu trữ qua HTTP-only cookie.
+*   [x] **Phân quyền Server-side:** Bảo vệ các tuyến đường `/organizer/*` (yêu cầu role `ORGANIZER` hoặc `ADMIN`) và `/admin/*` (chỉ dành cho `ADMIN`) ngay tại Server Layout của Next.js.
+*   [x] **Quản lý Profile:** Cho phép cập nhật tên hiển thị, ảnh đại diện và địa chỉ email nhận thông báo.
 
-### ✅ Phase 2: Web Core (100%)
+### ✅ Phase 3: Luồng Nghiệp Vụ Bán Vé & Soát Vé (100%)
+*   [x] **Luồng mua vé thông thường:** Người dùng mint trực tiếp qua MetaMask và đồng bộ cơ sở dữ liệu sau khi nhận được sự kiện on-chain thành công.
+*   [x] **Hệ thống Coupon:**
+    *   Giảm giá 100% (Vé miễn phí): Xử lý Server-side minting hoàn toàn (gasless cho người dùng), không yêu cầu ví thanh toán gas.
+    *   Giảm giá dưới 100%: Người dùng thanh toán trực tiếp số tiền đã giảm sang **Ví của Organizer** qua MetaMask. Server kiểm tra giao dịch on-chain (txHash) để đối soát số tiền và người nhận trước khi gọi ví hệ thống mint vé.
+*   [x] **Chuyển nhượng & Tặng vé:** Người dùng gọi hàm `safeTransferFrom` trực tiếp trên MetaMask, API đồng bộ và chuyển quyền sở hữu trên cơ sở dữ liệu, đồng thời hủy bỏ bài đăng bán của vé đó trên Marketplace (nếu có).
+*   [x] **Mã QR Động Bảo Mật:**
+    *   Client yêu cầu người dùng dùng ví ký offline xác nhận quyền sở hữu kèm mốc thời gian thực hiện.
+    *   Mã QR tự động hết hạn sau 60 giây và yêu cầu ký lại.
+    *   API check-in giải mã chữ ký, so sánh địa chỉ ví chủ sở hữu hiện tại và kiểm tra thời gian hết hạn (chống chụp màn hình chia sẻ vé).
+*   [x] **Giao diện Soát vé Premium:**
+    *   Thiết kế Dark Mode, hiệu ứng kính mờ (Glassmorphism).
+    *   Tích hợp âm thanh phản hồi Web Audio API (beep thành công, buzz trầm cảnh báo lỗi) mà không cần tải file tĩnh.
+    *   Hiển thị chi tiết thông tin người tham dự và phân loại lỗi rõ ràng.
 
-- [x] Next.js 16 + TypeScript + App Router
-- [x] Wagmi + Viem + RainbowKit + TanStack Query
-- [x] Prisma schema + Supabase PostgreSQL
-- [x] Wallet auth (nonce → verify → session cookie)
-- [x] Role-based access (USER / ORGANIZER / ADMIN)
+### ✅ Phase 4: Tích Hợp IPFS & Tìm Kiếm Tối Ưu (100%)
+*   [x] **IPFS Pinata Integration:** Upload metadata JSON tự động lên IPFS trước khi mint vé. File JSON chứa đầy đủ thuộc tính chuẩn hiển thị trên OpenSea (Events, Tiers, Venue, Date).
+*   [x] **Đồng bộ Token URI:** Cả hai luồng thanh toán (MetaMask mint trực tiếp và Server-side mint) đều sử dụng IPFS URI thực tế làm tokenURI trên blockchain.
+*   [x] **Tìm kiếm mờ (Fuzzy Search):** Kích hoạt extension `pg_trgm` và xây dựng chỉ mục GIN trgm trên PostgreSQL để tìm kiếm sự kiện nhanh chóng theo Tiêu đề và Địa điểm (hỗ trợ viết sai chính tả nhẹ hoặc không dấu).
+*   [x] **Category Filter:** Lọc danh mục sự kiện trực tiếp bằng câu lệnh Prisma ở database level để tối ưu hiệu năng.
 
-### ✅ Phase 3: Core Product Flows (100%)
+### ✅ Phase 5: Email Notifications & Xuất Dữ Liệu (100%)
+*   [x] **Email qua Resend:** Tích hợp SDK Resend để tự động gửi các email: Xác nhận mua vé, Thông báo đăng bán vé, Thông báo vé đã bán (gửi cho người bán), Xác nhận mua vé thành công từ chợ thứ cấp (gửi cho người mua).
+*   [x] **BOM UTF-8 CSV Exporter:** Xuất danh sách người tham dự sự kiện ra file CSV, hỗ trợ ký tự tiếng Việt có dấu hiển thị chính xác trong Excel.
 
-- [x] Create event (multi-tier, category, venue, banner)
-- [x] Publish on-chain (server-side, bypass MetaMask RPC issues)
-- [x] Buy ticket (MetaMask direct `eth_sendTransaction`)
-- [x] My Tickets + QR code generation
-- [x] Marketplace (list, buy, cancel — all on-chain + DB sync)
-- [x] Check-in (on-chain `useTicket()` + DB update)
-- [x] Withdraw funds from contract
-- [x] Resale with price limit (max 3x original, enforced in smart contract)
+### ✅ Phase 6: Quản Trị Hệ Thống & Bảng Điều Khiển (100%)
+*   [x] **Organizer Sidebar Layout:** Tái cấu trúc toàn bộ giao diện quản lý của Organizer tại `/organizer` sử dụng Sidebar, loại bỏ các thanh điều hướng lặp lại và gộp analytics thành Dashboard chính.
+*   [x] **Admin Panel (`/admin`):**
+    *   Trang chủ: Xem tổng quan thống kê số lượng người dùng, doanh số Primary, Secondary, phí hệ thống thu được và biểu đồ giao dịch.
+    *   Quản lý Users: Tìm kiếm, phân trang và thay đổi vai trò người dùng (`USER`, `ORGANIZER`, `ADMIN`).
+    *   Quản lý Events: Kiểm duyệt và thay đổi trạng thái hoạt động của sự kiện.
+    *   Cấu hình hợp đồng (`/admin/settings`): Đọc và thay đổi phí nền tảng (`platformFeeBps`), địa chỉ nhận phí (`feeRecipient`) trực tiếp on-chain. Khóa/mở chức năng chuyển nhượng vé cho từng contract sự kiện.
 
-### ✅ Phase 4: UI/UX (100%)
+---
 
-- [x] Pinterest-inspired design system (CSS variables, Inter font)
-- [x] Landing page (Hero + Search + Featured Events + Categories + How It Works)
-- [x] Events page (Search + Filter chips + Masonry grid + Pagination)
-- [x] Event detail (Banner + Info + Organizer + Tiers + Location Map + Share)
-- [x] Marketplace (Listed tickets + Buy button)
-- [x] My Tickets (Ticket grid + QR + Resale modal)
-- [x] Profile page (Purchase history + Stats + Email settings)
-- [x] Organizer pages (My Events, Create Event, Manage Event, Attendees, Check-in)
-- [x] Wallet dropdown (Address copy, Role badge, Network, Profile link, Sign out)
-- [x] Loading modal (Spinner + message for all blockchain operations)
-- [x] Toast notifications (Success/Error/Info)
-- [x] Skeleton components
-- [x] Responsive design (4→3→2→1 columns)
-- [x] Category system (Music, Tech, Food, Sports, Art, Business, General)
-- [x] Category pages with banner + filtered events
-- [x] Google Maps embed on event detail
-- [x] Event edit form
-- [x] Equal-height cards with aligned buttons
+## 3. Những Việc Chưa Làm (Future Improvements / Backlog)
 
-### ✅ Phase 5: Email Notifications (100%)
+### Ưu tiên Cao
+- [ ] **Etherscan Verification:** Viết cấu hình và chạy script tự động verify mã nguồn các hợp đồng thông minh đã deploy trên Etherscan để người dùng có thể dễ dàng kiểm tra code trực tiếp.
+- [ ] **Production Deployment:** Cấu hình deploy dự án frontend Next.js lên Vercel và database PostgreSQL lên môi trường Production.
 
-- [x] Resend integration (`lib/email/index.ts`)
-- [x] Ticket purchase confirmation email
-- [x] Ticket listing notification email
-- [x] Ticket sold notification (to seller)
-- [x] Marketplace purchase notification (to buyer)
-- [x] Email settings component in profile page
-- [x] Profile API for email management (`/api/profile`)
+### Ưu tiên Trung bình
+- [ ] **Framer Motion Animations:** Thêm các hiệu ứng chuyển cảnh mượt mà cho sidebar, card hover và loading modal bằng Framer Motion để tăng trải nghiệm người dùng cao cấp.
+- [ ] **Email Reminders:** Xây dựng hệ thống Cron Job gửi email nhắc nhở tự động cho khách tham dự trước khi sự kiện diễn ra 1 ngày.
 
-### ✅ Phase 6: Analytics Dashboard (100%)
-
-- [x] Analytics API endpoint (`/api/organizer/analytics`)
-- [x] Overview cards (Events, Tickets, Revenue, Marketplace)
-- [x] Daily revenue chart (last 7 days)
-- [x] Revenue by event table
-- [x] Ticket inventory by tier (progress bars)
-- [x] Quick actions navigation
-- [x] Analytics link in navigation
-
-### ⬜ Phase 7: Documentation (Chưa hoàn thành)
-
-- [ ] Update execution plan với features mới
-- [ ] Update run guide với env variables mới
-- [ ] Update demo script với email notifications
-- [ ] Update AI agent handoff prompt
-
-## Smart Contracts (Sepolia)
-
-| Contract | Address |
-|---|---|
-| EventFactory | `0x316654424537D288670070454f87bf3547341f6C` |
-| TicketMarketplace | `0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA` |
-
-## Pages
-
-| Page | URL | Status |
-|---|---|---|
-| Landing | `/` | ✅ |
-| Events | `/events` | ✅ |
-| Event Detail | `/events/[id]` | ✅ |
-| Category | `/events/category/[name]` | ✅ |
-| Marketplace | `/marketplace` | ✅ |
-| My Tickets | `/my-tickets` | ✅ |
-| Profile | `/profile` | ✅ |
-| My Events | `/organizer/events` | ✅ |
-| Analytics | `/organizer/analytics` | ✅ |
-| Create Event | `/organizer/events/new` | ✅ |
-| Manage Event | `/organizer/events/[id]` | ✅ |
-| Attendees | `/organizer/events/[id]/attendees` | ✅ |
-| Check-in | `/organizer/check-in` | ✅ |
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/nonce` | Create sign-in challenge |
-| POST | `/api/auth/verify` | Verify signature, set session |
-| GET | `/api/auth/me` | Get current user |
-| POST | `/api/auth/logout` | Clear session |
-| GET | `/api/events` | List published events |
-| POST | `/api/organizer/events` | Create event |
-| POST | `/api/organizer/publish` | Publish event on-chain (server-side) |
-| POST | `/api/events/[id]/go-live` | Link contract to event |
-| POST | `/api/events/[id]/status` | Update event status |
-| POST | `/api/events/[id]/edit` | Edit event details |
-| POST | `/api/tickets/mint` | Mint ticket (server-side) |
-| POST | `/api/tickets/buy` | Sync ticket purchase to DB + send email |
-| POST | `/api/tickets/check-in` | Check-in attendee (on-chain + DB) |
-| POST | `/api/marketplace/list` | List ticket for sale + send email |
-| POST | `/api/marketplace/buy` | Buy listed ticket + send emails |
-| POST | `/api/marketplace/cancel` | Cancel listing (on-chain + DB) |
-| GET | `/api/profile` | Get user profile with email |
-| PUT | `/api/profile` | Update user email/name/avatar |
-| GET | `/api/organizer/analytics` | Get organizer analytics data |
-
-## File Structure
-
-```
-TicketNFT/
-├── contracts/
-│   ├── contracts/
-│   │   ├── EventTicketNFT.sol      # ERC-721 + ERC-2981 ticket contract
-│   │   ├── EventFactory.sol        # Factory for creating event contracts
-│   │   └── TicketMarketplace.sol   # Secondary market with royalty
-│   ├── scripts/
-│   │   ├── deploy.ts               # Deploy script
-│   │   ├── createEvent.ts          # Create event script
-│   │   └── split-funds.ts          # Split ETH between wallets
-│   └── test/                       # 20 unit tests
-├── web/
-│   ├── app/
-│   │   ├── page.tsx                # Landing page
-│   │   ├── events/
-│   │   │   ├── page.tsx            # Events listing + search + filter
-│   │   │   ├── [id]/page.tsx       # Event detail + map + share
-│   │   │   └── category/[name]/    # Category pages
-│   │   ├── marketplace/page.tsx    # Secondary market
-│   │   ├── my-tickets/page.tsx     # Ticket inventory + QR
-│   │   ├── profile/page.tsx        # User profile + email settings
-│   │   ├── organizer/
-│   │   │   ├── events/page.tsx     # My events list
-│   │   │   ├── events/new/         # Create event form
-│   │   │   ├── events/[id]/        # Manage event + edit
-│   │   │   ├── events/[id]/attendees/ # Attendee list
-│   │   │   ├── analytics/          # Analytics dashboard
-│   │   │   └── check-in/           # QR scanner
-│   │   └── api/                    # 19 API routes
-│   ├── components/
-│   │   ├── layout/nav.tsx          # Shared navigation
-│   │   ├── wallet/                 # Wallet connection + dropdown
-│   │   ├── tickets/                # Buy, list, QR components
-│   │   ├── marketplace/            # Buy listed ticket
-│   │   ├── organizer/              # Publish, withdraw, settings
-│   │   ├── profile/                # Email settings component
-│   │   └── ui/                     # Toast, loading modal, skeleton
-│   ├── lib/
-│   │   ├── wagmi.ts                # Wagmi config (Sepolia only)
-│   │   ├── prisma.ts               # Prisma client singleton
-│   │   ├── contracts.ts            # ABI definitions
-│   │   ├── auth.ts                 # Session management
-│   │   └── email/                  # Email templates & sender
-│   │       └── index.ts            # Resend integration
-│   └── prisma/
-│       ├── schema.prisma           # Database schema
-│       └── seed.mjs                # Seed script
-└── docs/                           # Documentation
-```
-
-## Những gì chưa hoàn thành (Future Improvements)
-
-### Ưu tiên cao
-- [ ] IPFS metadata upload (Pinata) — NFT metadata thực tế
-- [ ] Contract verification trên Etherscan
-- [ ] Deploy lên Vercel (production)
-
-### Ưu tiên trung bình
-- [ ] Full-text search (pg_trgm) — Tìm kiếm tốt hơn
-- [ ] Coupon system — Mã giảm giá
-- [ ] Event edit form nâng cao (video banner, FAQ, lịch trình)
-- [ ] Export CSV — Xuất danh sách attendees
-- [ ] Framer Motion animations
-
-### Ưu tiên thấp
-- [ ] E2E tests (Playwright/Cypress)
-- [ ] Admin panel — Platform overview
-- [ ] Ticket transfer — Chuyển vé cho người khác
-- [ ] Email reminders — Nhắc nhở trước sự kiện
-- [ ] Sự kiện trực tuyến (Zoom integration)
-- [ ] Mobile app (React Native)
+### Ưu tiên Thấp
+- [ ] **E2E Tests:** Viết kịch bản kiểm thử tự động toàn bộ luồng từ tạo sự kiện, mua vé đến check-in bằng Playwright hoặc Cypress.
+- [ ] **Zoom / Online Event Integration:** Tích hợp tạo phòng họp Zoom tự động khi tạo sự kiện trực tuyến.
+- [ ] **Mobile App App:** Xây dựng ứng dụng di động đơn giản bằng React Native hoặc Flutter cho nhân viên soát vé quét QR nhanh hơn.

@@ -250,7 +250,7 @@ export default function AdminEventsPage() {
                           {event.category || "General"}
                         </span>
                         <span style={{ fontSize: "12px", color: "var(--color-ash)" }}>
-                          📍 {event.venue || "Virtual / No venue"}
+                          {event.venue || "Virtual / No venue"}
                         </span>
                       </div>
                     </td>

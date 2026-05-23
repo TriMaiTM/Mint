@@ -94,6 +94,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isDiscounted = false; // Buy flow doesn't use coupon code discount in this route directly, but let's keep it simple
+
+
     const user = await prisma.user.findUnique({ where: { id: session.sub } });
     if (!user) {
       return NextResponse.json(
@@ -125,6 +128,7 @@ export async function POST(request: NextRequest) {
         throw new Error("TOKEN_ID_ALREADY_USED");
       }
 
+
       await tx.ticketTier.update({
         where: { id: latestTier.id },
         data: { soldCount: { increment: 1 } },
@@ -151,6 +155,7 @@ export async function POST(request: NextRequest) {
           status: "MINTED",
           isUsed: false,
           qrCode: `${tier.eventId}:${onchainTokenId}`,
+
         },
       });
 
@@ -206,6 +211,13 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message === "TOKEN_ID_ALREADY_USED") {
       return NextResponse.json(
         { error: "tokenId already exists for this event" },
+        { status: 409 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "SEAT_ALREADY_TAKEN") {
+      return NextResponse.json(
+        { error: "Ghế này đã có người đặt mua trước đó." },
         { status: 409 },
       );
     }

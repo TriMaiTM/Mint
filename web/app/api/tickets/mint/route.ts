@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tier sold out" }, { status: 409 });
     }
 
+
     if (tier.onchainTierId === null) {
       return NextResponse.json(
         { error: "Tier not linked to on-chain tier" },
@@ -328,6 +329,7 @@ export async function POST(request: NextRequest) {
           status: "MINTED",
           isUsed: false,
           qrCode: `${tier.eventId}:${tokenId}`,
+
         },
       });
 

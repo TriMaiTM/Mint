@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { Nav } from "@/components/layout/nav";
+import { Footer } from "@/components/layout/footer";
 import { CopyAddressButton } from "./copy-address-button";
 import { EmailSettings } from "@/components/profile/email-settings";
 
@@ -241,7 +242,7 @@ export default async function ProfilePage() {
             className="btn-primary"
             style={{ textDecoration: "none" }}
           >
-            🎟️ My Tickets
+            My Tickets
           </Link>
           {isOrganizer && (
             <Link
@@ -249,7 +250,7 @@ export default async function ProfilePage() {
               className="btn-secondary"
               style={{ textDecoration: "none" }}
             >
-              💼 Organizer Panel
+              Organizer Panel
             </Link>
           )}
           {isAdmin && (
@@ -258,7 +259,7 @@ export default async function ProfilePage() {
               className="btn-secondary"
               style={{ textDecoration: "none" }}
             >
-              🛡️ Admin Panel
+              Admin Panel
             </Link>
           )}
         </div>
@@ -458,40 +459,7 @@ export default async function ProfilePage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="footer" style={{ marginTop: "var(--space-section)" }}>
-        <div className="footer-grid">
-          <div>
-            <p className="footer-col-header">TicketNFT</p>
-            <p className="text-body-sm text-muted">
-              NFT-based event ticketing on Polygon.
-            </p>
-          </div>
-          <div>
-            <p className="footer-col-header">Explore</p>
-            <Link href="/events" className="footer-link">
-              Events
-            </Link>
-            <Link href="/marketplace" className="footer-link">
-              Marketplace
-            </Link>
-          </div>
-          <div>
-            <p className="footer-col-header">Account</p>
-            <Link href="/my-tickets" className="footer-link">
-              My Tickets
-            </Link>
-            <Link href="/profile" className="footer-link">
-              Profile
-            </Link>
-          </div>
-          <div>
-            <p className="footer-col-header">Info</p>
-            <p className="text-body-sm text-muted">
-              Built with smart contracts for transparent, verifiable tickets.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/organizer", label: "Dashboard", icon: "📊", exact: true },
-  { href: "/organizer/events", label: "My Events", icon: "🎟️", exact: false },
-  { href: "/organizer/check-in", label: "Check-in QR", icon: "📷", exact: false },
+  { href: "/organizer", label: "Dashboard", exact: true, icon: "📊" },
+  { href: "/organizer/events", label: "My Events", exact: false, icon: "🎫" },
+  { href: "/organizer/check-in", label: "Check-in QR", exact: false, icon: "📷" },
 ];
 
 export function OrganizerSidebar() {

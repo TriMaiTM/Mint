@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
       { trait_type: "Thời gian bắt đầu", value: tier.event.startDate ? new Date(tier.event.startDate).toLocaleString("vi-VN") : "TBD" },
     ];
 
+
     const ipfsUri = await uploadMetadataToIPFS({
       name: metadataName,
       description: metadataDescription,

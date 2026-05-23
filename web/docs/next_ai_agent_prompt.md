@@ -1,307 +1,101 @@
-# TicketNFT — AI Agent Handoff Prompt
+# TicketNFT — AI Agent Handoff & Instructions
 
-You are taking over a Web3 fullstack NFT ticketing project at `D:\HK8\TicketNFT`.
+Tài liệu này đóng vai trò là chỉ dẫn chi tiết để chuyển giao dự án **TicketNFT** cho một AI coding agent tiếp theo tiếp tục phát triển.
 
-## Read First
+---
 
-Before doing anything, read these files in order:
-1. `web/docs/execution_plan.md` — Current status, all features, contract addresses
-2. `web/docs/run_guide.md` — How to set up and run the project
-3. `web/docs/DEMO.md` — Demo script with 3 wallets
-4. `web/docs/implementation_plan.md` — Technical architecture details
-5. `README.md` — Full project documentation
+## 1. Yêu Cầu Cho Agent Nhận Dự Án (Read First)
 
-## Project Summary
+Trước khi thực hiện bất kỳ thay đổi nào vào mã nguồn, bạn **bắt buộc** phải đọc qua các tài liệu thiết kế và hướng dẫn nằm trong thư mục `web/docs/` theo thứ tự sau:
+1.  `web/docs/execution_plan.md` — Trạng thái dự án, các tính năng đã làm và chưa làm.
+2.  `web/docs/implementation_plan.md` — Kiến trúc hệ thống, sơ đồ DB, luồng giao dịch nâng cao (Coupon checkout, QR security).
+3.  `web/docs/DEMO.md` — Kịch bản chạy thử toàn bộ luồng hệ thống với 3 tài khoản/ví.
+4.  `web/docs/run_guide.md` — Hướng dẫn cài đặt, cấu hình và chạy thử local.
+5.  `README.md` — Tài liệu tổng quan dự án ở thư mục gốc.
 
-A decentralized event ticketing platform on Sepolia testnet where:
-- Organizers create events with multiple ticket tiers and categories
-- Events are published on-chain (each event = 1 ERC-721 NFT contract)
-- Users buy NFT tickets via MetaMask
-- Secondary marketplace with 3x price limit and automatic royalty distribution
-- QR-based check-in with on-chain verification
-- Revenue withdrawal from smart contracts
-- Email notifications for purchases and marketplace activities
-- Analytics dashboard for organizers
+---
 
-## Tech Stack
+## 2. Tổng Quan Dự Án & Tiến Độ Hiện Tại
 
-| Layer | Technology |
-|---|---|
-| Smart Contracts | Solidity 0.8.26, Hardhat, OpenZeppelin v5 |
-| Blockchain | Sepolia Testnet (Ethereum) |
-| Frontend | Next.js 16, React 19, TypeScript |
-| Web3 | Wagmi v2, Viem v2, RainbowKit v2 |
-| Database | Supabase PostgreSQL, Prisma 6 |
-| Auth | Wallet signature (EIP-191) |
-| Email | Resend |
-| Design | Pinterest-inspired (Inter font, CSS variables) |
+Dự án **TicketNFT** là một nền tảng bán vé sự kiện phi tập trung ứng dụng NFT (chuẩn ERC-721 và phí tác quyền ERC-2981) chạy trên Sepolia testnet. Hệ thống kết hợp sự bảo mật, minh bạch của blockchain và trải nghiệm mượt mà của Web2.
 
-## Contract Addresses (Sepolia)
+**Tiến độ hiện tại: Hoàn thành 100% các Phase Core từ 1 đến 6 và các nâng cấp bảo mật UX.**
 
-- EventFactory: `0x316654424537D288670070454f87bf3547341f6C`
-- TicketMarketplace: `0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA`
+### Các tính năng lớn đã hoàn thiện:
+1.  **Hệ thống Coupon:** Giảm giá 100% (gasless minting qua server) và dưới 100% (gửi token trực tiếp cho ví organizer, server đối soát `txHash` on-chain để chống replay attack trước khi mint).
+2.  **Chuyển nhượng/Tặng vé:** Cho phép người dùng chuyển nhượng vé on-chain qua hàm `safeTransferFrom`, đồng thời cập nhật DB và huỷ đăng bán trên Marketplace.
+3.  **QR Code Động Bảo Mật:** Yêu cầu người dùng ký thông điệp offline (tiết kiệm gas) bằng MetaMask. Mã QR chứa chữ ký số và mốc thời gian thực hiện, tự động hết hạn sau 60 giây để chống chụp ảnh màn hình gian lận.
+4.  **Check-in Dashboard Cao Cấp:** Giao diện soát vé Dark Mode sang trọng, tích hợp âm thanh Web Audio API (beep thành công, buzz lỗi) và hiển thị chi tiết thông tin người tham dự cùng lý do lỗi cụ thể.
+5.  **Xuất danh sách Attendees:** Cho phép xuất file CSV lưu thông tin người tham dự có mã BOM UTF-8 hỗ trợ tiếng Việt có dấu.
+6.  **Tải Metadata IPFS thực tế:** Tích hợp Pinata API để tải file JSON mô tả vé NFT lên IPFS trước khi mint, tuân thủ định dạng thuộc tính hiển thị chuẩn của OpenSea.
+7.  **Tìm kiếm mờ (Fuzzy Search):** Tích hợp extension `pg_trgm` của PostgreSQL và tạo chỉ mục GIN trgm hỗ trợ tìm kiếm không dấu/sai chính tả nhẹ trên tiêu đề và địa điểm.
+8.  **Bảng điều khiển gộp Ban tổ chức & Admin:**
+    *   Tuyến đường `/organizer` và `/admin` được bảo vệ bằng cơ chế kiểm tra quyền truy cập server-side layout.
+    *   Thanh Sidebar điều hướng thống nhất tại cả hai khu vực.
+    *   Admin Panel `/admin` cho phép theo dõi chỉ số hệ thống, nâng hạ vai trò người dùng, duyệt/hủy sự kiện và sửa đổi phí giao dịch Marketplace trực tiếp on-chain qua MetaMask.
 
-## Architecture
+---
 
-```
-Frontend (Next.js)
-    ↓ API Routes (19 endpoints)
-Backend (Prisma + Supabase + Resend)
-    ↓ Server-side wallet
-Blockchain (Sepolia)
-```
-
-### Key Design Decisions
-
-1. **Server-side blockchain operations**: Publish, mint, check-in, and cancel operations use server-side wallet (private key in `.env`) to bypass MetaMask RPC issues. Only buy operations go through MetaMask directly.
-
-2. **MetaMask direct calls**: Buy operations use `window.ethereum.request({ method: "eth_sendTransaction" })` instead of viem's `writeContract` to avoid RPC gas estimation issues.
-
-3. **Strict on-chain enforcement**: Ticket purchases must succeed on-chain first, then sync to DB. No fake DB records.
-
-4. **Price limit in smart contract**: Marketplace enforces max 3x original price via `getTierPrice()` and `getTokenTierId()` getters.
-
-5. **Category system**: Events have a `category` field (Music, Tech, Food, Sports, Art, Business, General) with dedicated category pages.
-
-6. **Email notifications**: Non-blocking email sends via Resend. App works without email configuration.
-
-7. **Analytics dashboard**: Real-time analytics for organizers with revenue charts and ticket stats.
-
-## Non-Negotiable Rules
-
-1. **Draft events are off-chain only** — hidden from public until published
-2. **Published events must have real on-chain contract** — deployed through EventFactory
-3. **Ticket purchase = mint first, then DB record** — never create DB record before on-chain success
-4. **On-chain check-in** — `useTicket()` must be called on the contract, not just DB update
-5. **On-chain cancel** — `cancelListing()` must be called on the marketplace contract
-
-## Current Status: Phase 6 Complete
-
-### ✅ Completed Features
-
-**Smart Contracts (Phase 1)**
-- 3 smart contracts with 20 passing tests
-- EventTicketNFT (ERC-721 + ERC-2981)
-- EventFactory (factory pattern)
-- TicketMarketplace (secondary market with 3x price limit)
-
-**Web Core (Phase 2)**
-- Next.js 16 + TypeScript + App Router
-- Wagmi + Viem + RainbowKit + TanStack Query
-- Prisma schema + Supabase PostgreSQL
-- Wallet auth (nonce → verify → session cookie)
-- Role-based access (USER / ORGANIZER / ADMIN)
-
-**Core Product Flows (Phase 3)**
-- Create event (multi-tier, category, venue, banner)
-- Publish on-chain (server-side)
-- Buy ticket (MetaMask direct)
-- My Tickets + QR code generation
-- Marketplace (list, buy, cancel)
-- Check-in (on-chain + DB)
-- Withdraw funds
-- Resale with 3x price limit
-
-**UI/UX (Phase 4)**
-- Pinterest-inspired design system
-- 13 pages (Landing, Events, Detail, Category, Marketplace, My Tickets, Profile, My Events, Analytics, Create Event, Manage Event, Attendees, Check-in)
-- Loading modals, toast notifications, wallet dropdown
-- Google Maps embed, QR codes, search/filter/pagination
-- Responsive design (4→3→2→1 columns)
-
-**Email Notifications (Phase 5)**
-- Resend integration (`lib/email/index.ts`)
-- 4 email templates (purchase, listing, sold, buyer)
-- Email settings in profile page
-- Profile API for email management
-
-**Analytics Dashboard (Phase 6)**
-- Analytics API endpoint (`/api/organizer/analytics`)
-- Overview cards, revenue charts, ticket inventory
-- Analytics page with dashboard UI
-
-### ⬜ Not Yet Implemented
-
-**High Priority**
-- IPFS metadata upload (Pinata) — Real NFT metadata
-- Contract verification on Etherscan
-- Deploy to Vercel (production)
-
-**Medium Priority**
-- Full-text search (pg_trgm)
-- Coupon system — Discount codes
-- Enhanced event edit form (video banner, FAQ, schedule)
-- Export CSV — Attendee list export
-- Framer Motion animations
-
-**Low Priority**
-- E2E tests (Playwright/Cypress)
-- Admin panel — Platform overview
-- Ticket transfer — Gift tickets
-- Email reminders — Pre-event reminders
-- Online events (Zoom integration)
-- Mobile app (React Native)
-
-## Environment Setup
-
-### web/.env.local (required)
-```
-DATABASE_URL=postgresql://...
-AUTH_SECRET=random_secret
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/KEY
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/KEY
-NEXT_PUBLIC_EVENT_FACTORY_ADDRESS=0x316654424537D288670070454f87bf3547341f6C
-NEXT_PUBLIC_MARKETPLACE_ADDRESS=0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA
-PRIVATE_KEY=0x...
-```
-
-### web/.env.local (optional - for email)
-```
-RESEND_API_KEY=re_xxxxxxxxxxxxx
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### contracts/.env (required)
-```
-SEPOLIA_RPC_URL=https://sepolia.drpc.org
-PRIVATE_KEY=0x...
-```
-
-## Quick Commands
-
-```powershell
-# Web
-cd D:\HK8\TicketNFT\web
-npm run dev          # Start dev server
-npm run build        # Production build
-npm run prisma:push  # Sync schema to DB
-
-# Contracts
-cd D:\HK8\TicketNFT\contracts
-npm run test         # Run 20 tests
-npm run deploy:sepolia  # Deploy to Sepolia
-```
-
-## File Structure
+## 3. Bản Đồ Thư Mục Quan Trọng
 
 ```
 TicketNFT/
 ├── contracts/
 │   ├── contracts/
-│   │   ├── EventTicketNFT.sol      # ERC-721 + ERC-2981 ticket contract
-│   │   ├── EventFactory.sol        # Factory for creating event contracts
-│   │   └── TicketMarketplace.sol   # Secondary market with royalty
-│   ├── scripts/
-│   │   ├── deploy.ts               # Deploy script
-│   │   ├── createEvent.ts          # Create event script
-│   │   └── split-funds.ts          # Split ETH between wallets
-│   └── test/                       # 20 unit tests
+│   │   ├── EventTicketNFT.sol      # ERC-721 ticket contract
+│   │   ├── EventFactory.sol        # Factory deploy event contract
+│   │   └── TicketMarketplace.sol   # Secondary market contract
+│   └── test/                       # Bộ 20 unit tests chạy bằng Hardhat
 ├── web/
 │   ├── app/
-│   │   ├── page.tsx                # Landing page
+│   │   ├── page.tsx                # Trang chủ (Pinterest-inspired)
 │   │   ├── events/
-│   │   │   ├── page.tsx            # Events listing + search + filter
-│   │   │   ├── [id]/page.tsx       # Event detail + map + share
-│   │   │   └── category/[name]/    # Category pages
-│   │   ├── marketplace/page.tsx    # Secondary market
-│   │   ├── my-tickets/page.tsx     # Ticket inventory + QR
-│   │   ├── profile/page.tsx        # User profile + email settings
+│   │   │   ├── page.tsx            # Tìm kiếm mờ & Lọc category
+│   │   │   └── [id]/page.tsx       # Xem chi tiết event, Agenda & FAQs
 │   │   ├── organizer/
-│   │   │   ├── events/page.tsx     # My events list
-│   │   │   ├── events/new/         # Create event form
-│   │   │   ├── events/[id]/        # Manage event + edit
-│   │   │   ├── events/[id]/attendees/ # Attendee list
-│   │   │   ├── analytics/          # Analytics dashboard
-│   │   │   └── check-in/           # QR scanner
-│   │   └── api/                    # 19 API routes
+│   │   │   ├── page.tsx            # Dashboard phân tích chính
+│   │   │   ├── layout.tsx          # Sidebar layout & Server-side auth check
+│   │   │   ├── check-in/page.tsx   # Quét check-in QR có âm thanh Web Audio
+│   │   │   └── events/[id]/page.tsx# Quản lý sự kiện, Coupons, Agenda, FAQs
+│   │   ├── admin/
+│   │   │   ├── page.tsx            # Thống kê hệ thống
+│   │   │   ├── layout.tsx          # Admin layout & Server-side admin check
+│   │   │   ├── users/page.tsx      # Quản lý người dùng, đổi role
+│   │   │   ├── events/page.tsx     # Duyệt/hủy sự kiện
+│   │   │   └── settings/page.tsx   # Cấu hình phí on-chain & transfer toggle
+│   │   └── api/                    # Hệ thống 22 API endpoints
 │   ├── components/
-│   │   ├── layout/nav.tsx          # Shared navigation
-│   │   ├── wallet/                 # Wallet connection + dropdown
-│   │   ├── tickets/                # Buy, list, QR components
-│   │   ├── marketplace/            # Buy listed ticket
-│   │   ├── organizer/              # Publish, withdraw, settings
-│   │   ├── profile/                # Email settings component
-│   │   └── ui/                     # Toast, loading modal, skeleton
+│   │   ├── tickets/
+│   │   │   ├── buy-ticket-button.tsx # Xử lý mua thường & áp dụng coupon
+│   │   │   └── ticket-qr.tsx       # Sinh QR động kèm MetaMask sign & đếm ngược
+│   │   └── organizer/
+│   │       ├── coupons-manager.tsx # Quản lý coupon
+│   │       ├── agenda-manager.tsx  # Quản lý agenda
+│   │       └── faq-manager.tsx     # Quản lý FAQ
 │   ├── lib/
-│   │   ├── wagmi.ts                # Wagmi config (Sepolia only)
-│   │   ├── prisma.ts               # Prisma client singleton
-│   │   ├── contracts.ts            # ABI definitions
-│   │   ├── auth.ts                 # Session management
-│   │   └── email/                  # Email templates & sender
-│   │       └── index.ts            # Resend integration
+│   │   ├── pinata.ts               # Kết nối Pinata SDK upload IPFS
+│   │   └── contracts.ts            # Chứa địa chỉ và ABI các hợp đồng
 │   └── prisma/
-│       ├── schema.prisma           # Database schema
-│       └── seed.mjs                # Seed script
-└── docs/                           # Documentation (in web/docs/)
+│       ├── schema.prisma           # Cấu trúc cơ sở dữ liệu
+│       └── enable_trgm.mjs         # Script khởi tạo pg_trgm index
 ```
 
-## Key Patterns
+---
 
-### Server-side blockchain operations
-```typescript
-// Example: Publish event on-chain
-const account = privateKeyToAccount(process.env.PRIVATE_KEY);
-const walletClient = createWalletClient({ account, chain: sepolia, transport: http(rpcUrl) });
-const txHash = await walletClient.sendTransaction({ to: factoryAddress, data: callData, gas: 4_000_000n });
-```
+## 4. Các Quy Tắc Phát Triển Bắt Buộc
 
-### MetaMask direct calls (for user operations)
-```typescript
-// Example: Buy ticket
-const ethereum = window.ethereum;
-const txHash = await ethereum.request({
-  method: "eth_sendTransaction",
-  params: [{ from: address, to: contractAddress, data: callData, value: priceHex, gas: "0x493E0" }],
-});
-```
+1.  **Draft vs Published:** Sự kiện ở trạng thái `DRAFT` chỉ hiển thị với organizer tạo ra nó. Sự kiện chỉ công khai khi đã chạy **Publish On-chain** thành công và có địa chỉ contract.
+2.  **Ràng buộc giao dịch:** Tất cả các hành động liên quan đến tiền bạc/vé phải được thực hiện thành công trên blockchain trước, sau đó mới gọi API đồng bộ cơ sở dữ liệu. Không tạo bản ghi DB trước khi giao dịch blockchain thành công.
+3.  **Bảo vệ tài khoản server-side:** Không để lộ khóa `PRIVATE_KEY` hệ thống ở client. Các hành động gọi hàm `organizerMint` hoặc deploy từ Factory phải được thực hiện hoàn toàn từ Server-side API.
+4.  **Giao diện & Styling:** Dự án sử dụng hệ thống biến CSS nguyên bản (Vanilla CSS). **Không sử dụng Tailwind CSS** trừ khi có yêu cầu đặc biệt. Giữ phong cách Pinterest: bảng màu ấm (warm cream), góc bo tròn mềm mại (radius 16px/32px), hiệu ứng kính mờ (glassmorphism) và tương tác phản hồi hover mượt mà.
 
-### Email notifications (non-blocking)
-```typescript
-// Example: Send email after purchase
-if (user.email) {
-  sendEmail({
-    to: user.email,
-    subject: `🎫 Ticket Confirmed - ${event.title}`,
-    html: generateTicketPurchaseEmail({ ... }),
-  }).catch((err) => console.error('Failed to send email:', err));
-}
-```
+---
 
-### Design system
-```css
-/* All styles use CSS variables */
---color-primary: #e60023;  /* Pinterest Red — CTA only */
---color-canvas: #ffffff;
---color-surface-card: #f6f6f3;
---radius-md: 16px;
---font-family: Inter, system-ui, sans-serif;
-```
+## 5. Danh Sách Nhiệm Vụ Tiếp Theo (Backlog)
 
-## Suggested Next Steps
+Dưới đây là các tác vụ được đề xuất để bạn tiếp tục triển khai:
 
-If you want to continue improving this project, here are the recommended tasks:
-
-### 1. IPFS Metadata Upload (High Impact)
-- Integrate Pinata for real NFT metadata
-- Upload event images to IPFS
-- Generate proper metadata JSON for OpenSea display
-
-### 2. Full-text Search (Medium Impact)
-- Enable `pg_trgm` extension in Supabase
-- Implement fuzzy search for events
-- Add search by location
-
-### 3. Coupon System (Medium Impact)
-- Add Coupon model to Prisma schema
-- Create coupon management UI for organizers
-- Apply discounts during ticket purchase
-
-### 4. Contract Verification (Quick Win)
-- Verify contracts on Etherscan
-- Increases project credibility
-
-### 5. Deploy to Vercel (Quick Win)
-- Set up Vercel deployment
-- Configure environment variables
-- Set up custom domain
+1.  **Verify Contract trên Etherscan:** Viết script tự động verify mã nguồn các hợp đồng `EventTicketNFT`, `EventFactory` và `TicketMarketplace` sau khi deploy lên Sepolia để hiển thị code trực quan trên Etherscan.
+2.  **Đưa dự án lên Vercel:** Cấu hình các biến môi trường và chạy thử quá trình build production trên Vercel.
+3.  **Tích hợp Framer Motion:** Thêm các hiệu ứng animation mượt mà khi mở sidebar, chuyển đổi giữa các tab quản lý sự kiện và hover trên các thẻ sự kiện.
+4.  **Tự động gửi mail nhắc nhở:** Xây dựng một API endpoint hoặc Cron Job tự động quét database để gửi email qua Resend nhắc nhở người dùng tham gia sự kiện trước ngày diễn ra 1 ngày.

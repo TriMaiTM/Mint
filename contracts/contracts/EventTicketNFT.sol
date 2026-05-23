@@ -28,6 +28,7 @@ contract EventTicketNFT is ERC721URIStorage, ERC2981, Ownable, ReentrancyGuard {
     error MaxPerWalletExceeded();
     error TicketAlreadyUsed();
     error TransfersDisabled();
+    error EventAlreadyEnded();
 
     uint256 public immutable maxSupply;
     uint96 public immutable royaltyBps;
@@ -88,6 +89,7 @@ contract EventTicketNFT is ERC721URIStorage, ERC2981, Ownable, ReentrancyGuard {
     }
 
     function mint(uint8 tierId, string calldata tokenURI_) external payable nonReentrant returns (uint256 tokenId) {
+        if (eventEnded) revert EventAlreadyEnded();
         if (nextTokenId >= maxSupply) revert MintSoldOut();
         if (walletMinted[msg.sender] >= maxPerWallet) revert MaxPerWalletExceeded();
 
@@ -101,6 +103,7 @@ contract EventTicketNFT is ERC721URIStorage, ERC2981, Ownable, ReentrancyGuard {
     }
 
     function organizerMint(address to, uint8 tierId, string calldata tokenURI_) external onlyOwner returns (uint256 tokenId) {
+        if (eventEnded) revert EventAlreadyEnded();
         if (nextTokenId >= maxSupply) revert MintSoldOut();
 
         Tier storage tier = tiers[tierId];
@@ -117,6 +120,7 @@ contract EventTicketNFT is ERC721URIStorage, ERC2981, Ownable, ReentrancyGuard {
         string[] calldata tokenURIs
     ) external onlyOwner {
         require(recipients.length == tokenURIs.length, "Length mismatch");
+        if (eventEnded) revert EventAlreadyEnded();
 
         Tier storage tier = tiers[tierId];
         if (!tier.exists) revert InvalidTier();

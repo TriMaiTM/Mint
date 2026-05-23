@@ -43,7 +43,7 @@ contract TicketMarketplace is ReentrancyGuard, Ownable {
 
         feeRecipient = feeRecipient_;
         platformFeeBps = platformFeeBps_;
-        maxPriceMultiplierBps = 30000; // 3x default
+        maxPriceMultiplierBps = 12000; // 1.2x default
     }
 
     function setMaxPriceMultiplier(uint16 bps) external onlyOwner {
@@ -76,12 +76,10 @@ contract TicketMarketplace is ReentrancyGuard, Ownable {
         );
 
         // Enforce max resale price: price <= originalPrice * maxMultiplier
-        try IEventTicketNFT(nft).getTokenTierId(tokenId) returns (uint8 tierId) {
-            try IEventTicketNFT(nft).getTierPrice(tierId) returns (uint256 originalPrice) {
-                uint256 maxPrice = (originalPrice * maxPriceMultiplierBps) / 10000;
-                require(price <= maxPrice, "Price exceeds maximum");
-            } catch {}
-        } catch {}
+        uint8 tierId = IEventTicketNFT(nft).getTokenTierId(tokenId);
+        uint256 originalPrice = IEventTicketNFT(nft).getTierPrice(tierId);
+        uint256 maxPrice = (originalPrice * maxPriceMultiplierBps) / 10000;
+        require(price <= maxPrice, "Price exceeds maximum");
 
         bytes32 key = listingKey(nft, tokenId);
         listings[key] = Listing({
@@ -100,14 +98,25 @@ contract TicketMarketplace is ReentrancyGuard, Ownable {
         Listing storage item = listings[key];
 
         require(item.active, "Listing inactive");
-        require(item.seller == msg.sender, "Not seller");
+
+        bool isAuthorized = false;
+        if (msg.sender == item.seller || msg.sender == owner()) {
+            isAuthorized = true;
+        } else {
+            try IERC721(nft).ownerOf(tokenId) returns (address currentOwner) {
+                if (msg.sender == currentOwner) {
+                    isAuthorized = true;
+                }
+            } catch {}
+        }
+        require(isAuthorized, "Not authorized");
 
         item.active = false;
 
         // Note: Approval stays — seller can revoke manually if desired.
         // Marketplace can't revoke because it's not the token owner.
 
-        emit ListingCancelled(msg.sender, nft, tokenId);
+        emit ListingCancelled(item.seller, nft, tokenId);
     }
 
     function updatePrice(address nft, uint256 tokenId, uint256 newPrice) external {
@@ -119,6 +128,12 @@ contract TicketMarketplace is ReentrancyGuard, Ownable {
         require(item.active, "Listing inactive");
         require(item.seller == msg.sender, "Not seller");
 
+        // Enforce max resale price: newPrice <= originalPrice * maxMultiplier
+        uint8 tierId = IEventTicketNFT(nft).getTokenTierId(tokenId);
+        uint256 originalPrice = IEventTicketNFT(nft).getTierPrice(tierId);
+        uint256 maxPrice = (originalPrice * maxPriceMultiplierBps) / 10000;
+        require(newPrice <= maxPrice, "Price exceeds maximum");
+
         item.price = newPrice;
         emit ListingUpdated(msg.sender, nft, tokenId, newPrice);
     }
@@ -129,6 +144,7 @@ contract TicketMarketplace is ReentrancyGuard, Ownable {
 
         require(item.active, "Listing inactive");
         require(msg.value == item.price, "Incorrect payment");
+        require(msg.sender != item.seller, "Seller cannot buy own ticket");
 
         item.active = false;
         IERC721(item.nft).safeTransferFrom(item.seller, msg.sender, item.tokenId);
@@ -143,6 +159,7 @@ contract TicketMarketplace is ReentrancyGuard, Ownable {
             royaltyAmount = amount;
         } catch {}
 
+        require(platformFee + royaltyAmount <= msg.value, "Fees exceed price");
         uint256 sellerProceeds = msg.value - platformFee - royaltyAmount;
 
         if (platformFee > 0) {

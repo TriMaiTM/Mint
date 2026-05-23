@@ -1,195 +1,127 @@
-# TicketNFT — Run Guide
+# TicketNFT — Hướng dẫn cài đặt & Vận hành (Run Guide)
 
-## Prerequisites
+Tài liệu này hướng dẫn chi tiết các bước để thiết lập dự án, chạy thử nghiệm trên máy local và triển khai môi trường thử nghiệm Sepolia.
 
-- Node.js 20+
-- npm
-- MetaMask browser extension
-- Sepolia testnet ETH (from faucet)
-- Resend API Key (for email notifications) — optional
+---
 
-## Project Structure
+## 1. Chuẩn bị Môi trường
 
-```
-TicketNFT/
-├── contracts/          # Smart contracts (Hardhat)
-│   ├── contracts/      # Solidity files
-│   ├── scripts/        # Deploy & utility scripts
-│   └── test/           # Unit tests
-├── web/                # Next.js web app
-│   ├── app/            # Pages & API routes
-│   ├── components/     # React components
-│   ├── lib/            # Utilities (wagmi, prisma, contracts ABI, email)
-│   └── prisma/         # Database schema & seed
-└── docs/               # Documentation
-```
+Đảm bảo máy tính của bạn đã được cài đặt sẵn:
+- **Node.js 20+** và **npm**.
+- **MetaMask** (tiện ích mở rộng trình duyệt).
+- **Sepolia ETH** (lấy từ các vòi Faucet như: https://sepolia-faucet.pk910.de hoặc https://www.alchemy.com/faucets/ethereum-sepolia).
 
-## Quick Start
+---
 
-### 1. Setup Smart Contracts
+## 2. Thiết lập Dự án
 
-```powershell
-cd D:\HK8\TicketNFT\contracts
-npm install
-```
+Dự án được chia thành 2 thư mục chính: `contracts/` (quản lý mã nguồn Web3 / Smart Contract) và `web/` (quản lý ứng dụng frontend Next.js).
 
-Create `.env`:
-```env
-SEPOLIA_RPC_URL=https://sepolia.drpc.org
-PRIVATE_KEY=your_private_key_here
-```
+### Bước 2.1: Cấu hình Smart Contracts
+1.  Truy cập thư mục `contracts/`:
+    ```powershell
+    cd D:\HK8\TicketNFT\contracts
+    npm install
+    ```
+2.  Tạo file `.env` tại thư mục này với nội dung:
+    ```env
+    SEPOLIA_RPC_URL=https://sepolia.drpc.org
+    PRIVATE_KEY=your_private_key_here
+    ETHERSCAN_API_KEY=your_etherscan_key_here
+    ```
+    *(Thay `your_private_key_here` bằng khóa bí mật của ví deployer).*
+3.  Biên dịch hợp đồng:
+    ```powershell
+    npm run compile
+    ```
+4.  Chạy bộ kiểm thử tự động (Unit Tests):
+    ```powershell
+    npm run test
+    ```
+5.  Deploy lên mạng Sepolia:
+    ```powershell
+    npm run deploy:sepolia
+    ```
+    *Ghi lại địa chỉ của hai hợp đồng **EventFactory** và **TicketMarketplace** sau khi deploy thành công.*
 
-Compile & test:
-```powershell
-npm run compile
-npm run test
-```
+### Bước 2.2: Cấu hình Web App Next.js
+1.  Truy cập thư mục `web/`:
+    ```powershell
+    cd D:\HK8\TicketNFT\web
+    npm install
+    ```
+2.  Tạo file `.env.local` với các nội dung sau:
+    ```env
+    # Cơ sở dữ liệu Supabase PostgreSQL
+    DATABASE_URL="postgresql://postgres:password@db.supabase.co:5432/postgres"
 
-Deploy to Sepolia:
-```powershell
-npm run deploy:sepolia
-```
+    # Chuỗi bảo mật ngẫu nhiên cho Auth Session
+    AUTH_SECRET="your_random_auth_secret_here"
 
-### 2. Setup Web App
+    # Mã Project ID lấy từ WalletConnect Cloud
+    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="your_walletconnect_project_id"
 
-```powershell
-cd D:\HK8\TicketNFT\web
-npm install
-```
+    # Địa chỉ RPC kết nối Sepolia
+    NEXT_PUBLIC_SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/your_alchemy_key"
+    SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/your_alchemy_key"
 
-Create `.env.local`:
-```env
-# Database
-DATABASE_URL=postgresql://...
+    # Địa chỉ Smart Contract vừa deploy ở Bước 2.1
+    NEXT_PUBLIC_EVENT_FACTORY_ADDRESS="0x316654424537D288670070454f87bf3547341f6C"
+    NEXT_PUBLIC_MARKETPLACE_ADDRESS="0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA"
 
-# Auth
-AUTH_SECRET=random_secret_here
+    # Khóa bí mật ví hệ thống (thực hiện Gasless Mint & Publish)
+    PRIVATE_KEY="your_private_key_here"
 
-# WalletConnect
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
+    # Thiết lập IPFS (Pinata)
+    PINATA_JWT="your_pinata_jwt_here"
+    # Hoặc cặp Key/Secret:
+    PINATA_API_KEY="your_pinata_api_key"
+    PINATA_API_SECRET="your_pinata_api_secret"
 
-# Blockchain RPC
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your_key
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your_key
+    # Thiết lập Email qua Resend (Tùy chọn)
+    RESEND_API_KEY="re_your_resend_api_key"
+    NEXT_PUBLIC_APP_URL="http://localhost:3000"
+    ```
+3.  Cấu hình cơ sở dữ liệu và Prisma:
+    *   Tạo các bảng trong DB:
+        ```powershell
+        npx prisma db push
+        ```
+    *   Tạo Prisma Client:
+        ```powershell
+        npx prisma generate
+        ```
+    *   Chạy script kích hoạt extension `pg_trgm` và tạo GIN indexes:
+        ```powershell
+        node prisma/enable_trgm.mjs
+        ```
+    *   Nạp dữ liệu mẫu ban đầu (Seed Data):
+        ```powershell
+        npx prisma db seed
+        ```
 
-# Smart Contract Addresses
-NEXT_PUBLIC_EVENT_FACTORY_ADDRESS=0x316654424537D288670070454f87bf3547341f6C
-NEXT_PUBLIC_MARKETPLACE_ADDRESS=0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA
+---
 
-# Server-side wallet private key
-PRIVATE_KEY=your_private_key_here
+## 3. Chạy Thử nghiệm Local
 
-# Email (Optional - for notifications)
-RESEND_API_KEY=re_xxxxxxxxxxxxx
+1.  Khởi động server phát triển tại thư mục `web/`:
+    ```powershell
+    npm run dev
+    ```
+2.  Mở trình duyệt truy cập `http://localhost:3000`.
 
-# App URL (for email links)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+---
 
-Setup database:
-```powershell
-npm run prisma:generate
-npm run prisma:push
-npm run prisma:seed
-```
+## 4. Các Lệnh Hỗ trợ Thường Dùng (Scripts)
 
-Run dev server:
-```powershell
-npm run dev
-```
+### Tại thư mục `web/`
+- `npm run dev`: Chạy môi trường phát triển local.
+- `npm run build`: Biên dịch dự án Next.js (kiểm tra lỗi TypeScript/Eslint).
+- `npm run lint`: Chạy công cụ kiểm tra lỗi cú pháp code.
+- `npm run prisma:studio`: Mở giao diện web trực quan quản lý dữ liệu database.
+- `node prisma/enable_trgm.mjs`: Chạy script cập nhật chỉ mục tìm kiếm mờ cho DB.
 
-Open http://localhost:3000
-
-### 3. MetaMask Setup
-
-Add Sepolia network:
-- Network Name: `Sepolia`
-- RPC URL: `https://eth-sepolia.g.alchemy.com/v2/your_key`
-- Chain ID: `11155111`
-- Currency: `ETH`
-- Explorer: `https://sepolia.etherscan.io`
-
-### 4. Email Setup (Optional)
-
-To enable email notifications:
-
-1. Create account at https://resend.com
-2. Get your API key from the dashboard
-3. Add `RESEND_API_KEY=re_xxxxxxxxxxxxx` to `.env.local`
-4. Emails will be sent from `TicketNFT <onboarding@resend.dev>`
-
-**Note:** Without `RESEND_API_KEY`, the app will work normally but won't send emails.
-
-## Available Scripts
-
-### Web App
-```powershell
-npm run dev              # Dev server
-npm run build            # Production build
-npm run start            # Production server
-npm run lint             # Lint check
-npm run prisma:generate  # Generate Prisma client
-npm run prisma:push      # Push schema to DB
-npm run prisma:seed      # Seed demo data
-npm run prisma:studio    # Open Prisma Studio
-npm run reset:chain      # Reset blockchain links (preserve users/events)
-npm run demo:setup       # Setup demo with 3 wallets
-```
-
-### Contracts
-```powershell
-npm run compile          # Compile contracts
-npm run test             # Run tests
-npm run deploy:sepolia   # Deploy to Sepolia
-```
-
-## Environment Variables
-
-### web/.env.local
-
-| Variable | Description | Required |
-|---|---|---|
-| `DATABASE_URL` | Supabase PostgreSQL URL | Yes |
-| `AUTH_SECRET` | Random string for session signing | Yes |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | WalletConnect project ID | Yes |
-| `NEXT_PUBLIC_SEPOLIA_RPC_URL` | Sepolia RPC for browser (Alchemy) | Yes |
-| `NEXT_PUBLIC_EVENT_FACTORY_ADDRESS` | EventFactory contract address | Yes |
-| `NEXT_PUBLIC_MARKETPLACE_ADDRESS` | TicketMarketplace contract address | Yes |
-| `PRIVATE_KEY` | Organizer deployer key (server-side) | Yes |
-| `SEPOLIA_RPC_URL` | Sepolia RPC for server (Alchemy) | Yes |
-| `RESEND_API_KEY` | Resend API key for email notifications | Optional |
-| `NEXT_PUBLIC_APP_URL` | App URL for email links | Optional |
-
-### contracts/.env
-
-| Variable | Description | Required |
-|---|---|---|
-| `SEPOLIA_RPC_URL` | Sepolia RPC URL | Yes |
-| `PRIVATE_KEY` | Deployer private key | Yes |
-| `ETHERSCAN_API_KEY` | For contract verification | Optional |
-
-## Troubleshooting
-
-### "Failed to create sign-in nonce"
-- Check `DATABASE_URL` in `.env.local`
-- Run `npm run prisma:push`
-- Verify Supabase project is active
-
-### "RPC endpoint returned too many errors"
-- Use Alchemy RPC instead of public RPC
-- Set `NEXT_PUBLIC_SEPOLIA_RPC_URL` to Alchemy URL
-
-### MetaMask transaction fails
-- Ensure you're on Sepolia network (Chain ID 11155111)
-- Check wallet has enough ETH
-- Try resetting MetaMask account (Settings → Advanced → Clear activity)
-
-### Build crashes
-- Increase Node memory: `NODE_OPTIONS="--max-old-space-size=4096" npm run build`
-- Clear `.next` folder and rebuild
-
-### Emails not sending
-- Check if `RESEND_API_KEY` is set in `.env.local`
-- Verify API key is valid at https://resend.com
-- Check console logs for email errors
-- App works normally without email - it's optional
+### Tại thư mục `contracts/`
+- `npm run compile`: Biên dịch mã nguồn Solidity.
+- `npm run test`: Chạy bộ unit tests.
+- `npm run deploy:sepolia`: Deploy smart contract lên Sepolia testnet.

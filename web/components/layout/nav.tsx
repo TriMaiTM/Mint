@@ -22,22 +22,47 @@ export function Nav() {
   const isOrganizer =
     isAuthenticated && (user?.role === "ORGANIZER" || user?.role === "ADMIN");
   const isAdmin = isAuthenticated && user?.role === "ADMIN";
-
   return (
     <nav className="nav-primary">
       <div className="nav-inner">
-        <Link
-          href="/"
-          style={{
-            fontSize: "20px",
-            fontWeight: 700,
-            color: "var(--color-primary)",
-            textDecoration: "none",
-            letterSpacing: "-0.5px",
-          }}
-        >
+        <Link href="/" className="nav-logo" style={{ flexShrink: 0 }}>
           TicketNFT
         </Link>
+
+        <form action="/events" method="GET" className="nav-search-form" style={{ margin: 0, marginLeft: "var(--space-md)" }}>
+          <span
+            style={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--color-ash)",
+              display: "flex",
+              alignItems: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            name="q"
+            placeholder="Search events..."
+            className="nav-search-input"
+          />
+        </form>
 
         <div
           className="nav-links"
@@ -47,6 +72,7 @@ export function Nav() {
             gap: "var(--space-xl)",
             flex: 1,
             justifyContent: "center",
+            marginRight: "100px",
           }}
         >
           {NAV_LINKS.map((link) => {
@@ -55,13 +81,7 @@ export function Nav() {
               <Link
                 key={link.href}
                 href={link.href}
-                style={{
-                  fontSize: "15px",
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? "var(--color-ink)" : "var(--color-mute)",
-                  textDecoration: "none",
-                  transition: "color 0.15s",
-                }}
+                className={isActive ? "nav-link nav-link-active" : "nav-link"}
               >
                 {link.label}
               </Link>
@@ -85,13 +105,7 @@ export function Nav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? "var(--color-ink)" : "var(--color-mute)",
-                    textDecoration: "none",
-                    transition: "color 0.15s",
-                  }}
+                  className={isActive ? "nav-link nav-link-active" : "nav-link"}
                 >
                   {link.label}
                 </Link>
@@ -101,13 +115,7 @@ export function Nav() {
           {isAdmin && (
             <Link
               href="/admin"
-              style={{
-                fontSize: "15px",
-                fontWeight: pathname.startsWith("/admin") ? 600 : 400,
-                color: pathname.startsWith("/admin") ? "var(--color-ink)" : "var(--color-mute)",
-                textDecoration: "none",
-                transition: "color 0.15s",
-              }}
+              className={pathname.startsWith("/admin") ? "nav-link nav-link-active" : "nav-link"}
             >
               Admin Panel
             </Link>
@@ -119,6 +127,7 @@ export function Nav() {
             display: "flex",
             alignItems: "center",
             gap: "var(--space-md)",
+            flexShrink: 0,
           }}
         >
           {isOrganizer && (
@@ -134,5 +143,4 @@ export function Nav() {
         </div>
       </div>
     </nav>
-  );
-}
+  );}

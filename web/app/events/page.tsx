@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/layout/nav";
+import { Footer } from "@/components/layout/footer";
 import Link from "next/link";
 
 /* ------------------------------------------------------------------ */
@@ -131,24 +132,30 @@ export default async function EventsPage({ searchParams }: Props) {
         }}
       >
         <div className="container">
-          {/* ── Page Header ── */}
-          <header style={{ marginBottom: "var(--space-xl)" }}>
-            <h1
-              className="text-heading-xl"
-              style={{ color: "var(--color-ink)" }}
-            >
-              Browse Events
-            </h1>
-            <p
-              className="text-body-md"
-              style={{
-                color: "var(--color-mute)",
-                marginTop: "var(--space-sm)",
-              }}
-            >
-              Discover upcoming events and secure your NFT ticket.
-            </p>
-          </header>
+          {/* ── Page Hero Banner ── */}
+          <section
+            className="category-banner"
+            style={{
+              background: "linear-gradient(135deg, #7e238b 0%, #e60023 100%)",
+              border: "none",
+              minHeight: "220px",
+              boxShadow: "0 8px 32px rgba(230, 0, 35, 0.15)",
+            }}
+          >
+            <div className="category-banner-content" style={{ maxWidth: "75%" }}>
+              <h1 className="category-banner-title" style={{ color: "#ffffff", fontSize: "40px", textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)" }}>
+                Discover Events
+              </h1>
+              <p className="category-banner-subtitle" style={{ color: "rgba(255, 255, 255, 0.95)", fontSize: "15px", textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)" }}>
+                Find unique experiences, upcoming tech meetups, music shows, and secure your verifiable NFT tickets.
+              </p>
+            </div>
+            <div className="category-banner-graphic" style={{ opacity: 0.25 }}>
+              <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#ffffff" }}>
+                <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 0 1 9-9" />
+              </svg>
+            </div>
+          </section>
 
           {/* ── Search Bar ── */}
           <form
@@ -167,7 +174,7 @@ export default async function EventsPage({ searchParams }: Props) {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
@@ -178,15 +185,24 @@ export default async function EventsPage({ searchParams }: Props) {
             <input
               type="text"
               name="q"
-              className="input-search"
-              placeholder="Search events by title..."
+              placeholder="Search events by title or venue..."
               defaultValue={query}
+              style={{
+                width: "100%",
+                padding: "14px 16px 14px 44px",
+                fontSize: "15px",
+                borderRadius: "var(--radius-full)",
+                border: "1px solid var(--color-hairline)",
+                backgroundColor: "var(--color-surface-soft)",
+                color: "var(--color-ink)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
               aria-label="Search events"
             />
           </form>
 
           {/* ── Filter Chips ── */}
-          <div className="filter-bar">
+          <div className="filter-bar" style={{ marginBottom: "var(--space-xl)", paddingTop: 0 }}>
             {CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat.value;
               return (
@@ -194,6 +210,14 @@ export default async function EventsPage({ searchParams }: Props) {
                   key={cat.value}
                   href={buildHref({ category: cat.value, page: "1" })}
                   className={isActive ? "chip chip-active" : "chip"}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: "var(--radius-full)",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
                   aria-current={isActive ? "true" : undefined}
                 >
                   {cat.label}
@@ -262,7 +286,14 @@ export default async function EventsPage({ searchParams }: Props) {
           ) : (
             <>
               {/* ── Event Grid ── */}
-              <div className="masonry-grid">
+              <div
+                className="events-grid-3"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "var(--space-xl)",
+                }}
+              >
                 {mapped.map((event) => (
                   <Link
                     key={event.id}
@@ -340,6 +371,7 @@ export default async function EventsPage({ searchParams }: Props) {
           )}
         </div>
       </main>
+      <Footer />
     </>
   );
 }

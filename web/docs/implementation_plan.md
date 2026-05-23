@@ -1,199 +1,234 @@
-# TicketNFT — Implementation Plan
+# TicketNFT — Tài liệu Kiến trúc & Thiết kế Chi tiết (Implementation Plan)
 
-## Tổng quan
+Tài liệu này cung cấp cái nhìn chi tiết về kiến trúc hệ thống, cấu trúc cơ sở dữ liệu, luồng dữ liệu nghiệp vụ nâng cao và các mẫu thiết kế của dự án **TicketNFT**.
 
-Hệ thống bán vé sự kiện NFT trên Sepolia testnet. Organizer tạo event, publish on-chain, user mua vé NFT, bán lại trên marketplace, check-in bằng QR.
+---
 
-## Kiến trúc
-
-```
-┌─────────────────────────────────────────────────┐
-│                 Frontend (Next.js)               │
-│  Pages: Landing, Events, Detail, Marketplace,    │
-│  My Tickets, Profile, Organizer pages, Analytics │
-│  Design: Pinterest-inspired (Inter font)         │
-└────────────────────┬────────────────────────────┘
-                     │ API Routes (19 endpoints)
-┌────────────────────▼────────────────────────────┐
-│              Backend (Prisma + Supabase)         │
-│  Auth: Wallet signature (EIP-191)                │
-│  DB: PostgreSQL (User, Event, Ticket, Order)     │
-│  Email: Resend (purchase, listing, sale notifs)  │
-└────────────────────┬────────────────────────────┘
-                     │ Server-side wallet + MetaMask
-┌────────────────────▼────────────────────────────┐
-│            Blockchain (Sepolia Testnet)          │
-│  EventFactory → EventTicketNFT (per event)       │
-│  TicketMarketplace (secondary market)            │
-└─────────────────────────────────────────────────┘
-```
-
-## Smart Contracts
-
-### EventTicketNFT (ERC-721 + ERC-2981)
-- Multi-tier ticket support (General, VIP, VVIP)
-- `mint()` — user mua vé (payable, requires exact price)
-- `organizerMint()` — organizer airdrop (không trừ maxPerWallet)
-- `useTicket()` — đánh dấu vé đã dùng (check-in)
-- `setTransferable()` — khóa/chuyển nhượng
-- `setEventEnded()` — kết thúc event
-- `withdraw()` — rút doanh thu
-- `getTierPrice()` / `getTokenTierId()` — getters cho marketplace
-
-### EventFactory
-- Factory pattern — mỗi event = 1 contract riêng
-- `createEvent()` — deploy EventTicketNFT mới
-- `getEventsByOrganizer()` — danh sách event theo organizer
-
-### TicketMarketplace
-- Secondary market với platform fee (2.5%) + royalty (5%)
-- `listTicket()` — đăng bán (kiểm giá max 3x)
-- `buyTicket()` — mua lại (tự động chia tiền)
-- `cancelListing()` — huỷ đăng bán
-- `updatePrice()` — cập nhật giá
-- `setFeeRecipient()` / `setPlatformFee()` — owner settings
-
-## Database Schema
+## 1. Sơ đồ Kiến trúc Hệ thống
 
 ```
-User (id, walletAddress, email, role, name, avatar)
-  └── Event (id, organizerId, contractAddress, title, category, venue, status)
-       └── TicketTier (id, eventId, name, price, maxQuantity, soldCount, onchainTierId)
-       └── Ticket (id, eventId, tierId, ownerId, tokenId, txHash, status, isUsed)
-       └── Order (id, userId, eventId, totalAmount, txHash, status)
-       └── Listing (id, ticketId, sellerId, price, status)
-AuthNonce (id, walletAddress, nonce, message, expiresAt)
+┌────────────────────────────────────────────────────────┐
+│                   Giao diện (Frontend)                 │
+│  - Trang Công khai: Landing, Events (Fuzzy Search),    │
+│    Event Detail (Timeline Agenda, Accordion FAQs)      │
+│  - Trang Cá nhân: My Tickets (Signed QR), Profile      │
+│  - Chợ thứ cấp: Marketplace                            │
+│  - Bảng điều khiển:                                    │
+│    + /organizer (Sidebar, Analytics, Check-in Premium) │
+│    + /admin (Sidebar, Stats, User Roles, Settings)     │
+└──────────────────────────┬─────────────────────────────┘
+                           │ API Requests (JSON / HTTP)
+┌──────────────────────────▼─────────────────────────────┐
+│                    Máy chủ (API Routes)                │
+│  - Xác thực: Wallet signature EIP-191, session cookie  │
+│  - IPFS: Pinata SDK upload JSON metadata              │
+│  - Email: Resend SDK gửi thư tự động không đồng bộ     │
+│  - Nghiệp vụ: Cập nhật DB, đối soát giao dịch on-chain │
+└──────────────────────────┬─────────────────────────────┘
+                           │ Prisma / Private Key
+┌──────────────────────────▼─────────────────────────────┐
+│               Tầng Dữ liệu & Chuỗi Khối                │
+│  - Database: PostgreSQL (Supabase) với GIN Indexes      │
+│  - Smart Contracts (Sepolia):                          │
+│    + EventFactory -> Deploy EventTicketNFT             │
+│    + TicketMarketplace (Secondary Market, Royalty)     │
+└────────────────────────────────────────────────────────┘
 ```
 
-## Pages
+---
 
-| Page | URL | Type | Description |
-|---|---|---|---|
-| Landing | `/` | Server | Hero + Search + Featured + Categories |
-| Events | `/events` | Server | Search + Filter + Grid + Pagination |
-| Event Detail | `/events/[id]` | Server | Banner + Info + Map + Tiers + Share |
-| Category | `/events/category/[name]` | Server | Banner + Filtered events |
-| Marketplace | `/marketplace` | Server | Listed tickets + Buy |
-| My Tickets | `/my-tickets` | Server | Ticket grid + QR + Resale |
-| Profile | `/profile` | Server | Purchase history + Stats + Email settings |
-| My Events | `/organizer/events` | Server | Event list + Manage |
-| Analytics | `/organizer/analytics` | Client | Dashboard + Charts + Stats |
-| Create Event | `/organizer/events/new` | Client | Multi-tier form + Category |
-| Manage Event | `/organizer/events/[id]` | Server | Edit + Publish + Withdraw + Settings |
-| Attendees | `/organizer/events/[id]/attendees` | Server | Attendee list + Check-in |
-| Check-in | `/organizer/check-in` | Client | QR Scanner |
+## 2. Thiết kế Cơ sở Dữ liệu (Prisma Schema)
 
-## API Endpoints
+Cấu trúc cơ sở dữ liệu được mở rộng để lưu trữ thông tin coupon, lịch trình sự kiện (agenda), câu hỏi thường gặp (FAQs), và ghi nhận chi tiết giao dịch.
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/auth/nonce` | No | Create sign-in challenge |
-| POST | `/api/auth/verify` | No | Verify signature, set session |
-| GET | `/api/auth/me` | Yes | Get current user |
-| POST | `/api/auth/logout` | Yes | Clear session |
-| GET | `/api/events` | No | List published events |
-| POST | `/api/organizer/events` | Yes | Create event |
-| POST | `/api/organizer/publish` | Yes | Publish on-chain (server-side) |
-| POST | `/api/events/[id]/go-live` | Yes | Link contract to event |
-| POST | `/api/events/[id]/status` | Yes | Update event status |
-| POST | `/api/events/[id]/edit` | Yes | Edit event details |
-| POST | `/api/tickets/mint` | Yes | Mint ticket (server-side) |
-| POST | `/api/tickets/buy` | Yes | Sync ticket purchase + send email |
-| POST | `/api/tickets/check-in` | Yes | Check-in (on-chain + DB) |
-| POST | `/api/marketplace/list` | Yes | List ticket + send email |
-| POST | `/api/marketplace/buy` | Yes | Buy listed ticket + send emails |
-| POST | `/api/marketplace/cancel` | Yes | Cancel listing (on-chain + DB) |
-| GET | `/api/profile` | Yes | Get user profile with email |
-| PUT | `/api/profile` | Yes | Update user email/name/avatar |
-| GET | `/api/organizer/analytics` | Yes | Get organizer analytics data |
+```prisma
+model User {
+  id            String    @id @default(cuid())
+  walletAddress String    @unique
+  email         String?   @unique
+  name          String?
+  avatar        String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  events        Event[]   @relation("OrganizerEvents")
+  tickets       Ticket[]  @relation("OwnerTickets")
+  orders        Order[]
+  listings      Listing[] @relation("SellerListings")
+}
 
-## Email Notifications
+model Event {
+  id              String       @id @default(cuid())
+  organizerId     String
+  contractAddress String?      @unique
+  title           String
+  description     String
+  bannerUrl       String
+  category        String
+  venue           String
+  startDate       DateTime
+  endDate         DateTime
+  status          EventStatus  @default(DRAFT)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organizer       User         @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  tiers           TicketTier[]
+  tickets         Ticket[]
+  orders          Order[]
+  coupons         Coupon[]
+  agenda          AgendaItem[]
+  faqs            FAQ[]
+}
 
-### Tích hợp Resend
-- `lib/email/index.ts` — Email sender + templates
-- Lazy initialization (không crash nếu thiếu API key)
-- Non-blocking sends (không ảnh hưởng response time)
+model TicketTier {
+  id             String   @id @default(cuid())
+  eventId        String
+  name           String
+  price          String // Lưu dưới dạng ETH/POL string
+  maxQuantity    Int
+  soldCount      Int      @default(0)
+  onchainTierId  Int
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets        Ticket[]
+}
 
-### Email Templates
-1. **Ticket Purchase Confirmation** — Sau khi mua vé
-2. **Ticket Listed Notification** — Sau khi đăng bán
-3. **Ticket Sold Notification** — Gửi cho seller
-4. **Marketplace Purchase** — Gửi cho buyer
+model Ticket {
+  id        String       @id @default(cuid())
+  eventId   String
+  tierId    String
+  ownerId   String
+  tokenId   Int?
+  txHash    String?      @unique
+  tokenURI  String?
+  status    TicketStatus @default(MINTING)
+  isUsed    Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  event     Event        @relation(fields: [eventId], references: [id])
+  tier      TicketTier   @relation(fields: [tierId], references: [id])
+  owner     User         @relation("OwnerTickets", fields: [ownerId], references: [id])
+}
 
-### Email Settings
-- Component: `components/profile/email-settings.tsx`
-- API: `GET/PUT /api/profile`
-- Users có thể thêm/sửa email trong Profile page
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  eventId     String
+  couponId    String?
+  totalAmount String // Số tiền thanh toán thực tế
+  txHash      String?     @unique
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id])
+  event       Event       @relation(fields: [eventId], references: [id])
+  coupon      Coupon?     @relation(fields: [couponId], references: [id])
+}
 
-## Analytics Dashboard
+model Coupon {
+  id          String     @id @default(cuid())
+  eventId     String
+  code        String     // Mã coupon viết hoa
+  type        CouponType @default(PERCENTAGE)
+  value       Float      // Phần trăm (0-100) hoặc số tiền cố định
+  maxUses     Int        // Số lượt sử dụng tối đa
+  usedCount   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  event       Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orders      Order[]
+}
 
-### API: `/api/organizer/analytics`
-Returns:
-- `overview`: Total events, tickets sold, revenue, marketplace volume
-- `revenueByEvent`: Revenue breakdown per event
-- `tierStats`: Ticket inventory by tier
-- `recentOrders`: Last 10 orders
-- `dailyRevenue`: Revenue for last 7 days
+model AgendaItem {
+  id          String   @id @default(cuid())
+  eventId     String
+  time        String   // Ví dụ "09:00 - 10:00"
+  title       String
+  description String?
+  speaker     String?
+  createdAt   DateTime @default(now())
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
 
-### Page: `/organizer/analytics`
-- Overview cards (Events, Tickets, Revenue, Marketplace)
-- Daily revenue bar chart
-- Revenue by event table
-- Ticket inventory with progress bars
-- Quick actions
+model FAQ {
+  id        String   @id @default(cuid())
+  eventId   String
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
 
-## Design System
-
-- **Font**: Inter (400/500/600/700)
-- **Primary color**: `#e60023` (Pinterest Red — CTA only)
-- **Surfaces**: Warm cream (`#f6f6f3`, `#fbfbf9`, `#ffffff`)
-- **Radius**: 16px (cards), 32px (modals), pill (circular)
-- **Grid**: 4→3→2→1 columns responsive
-- **Spacing**: 8px base, 64px section
-
-## Environment Variables
-
-### web/.env.local
+model Listing {
+  id        String        @id @default(cuid())
+  ticketId  String
+  sellerId  String
+  price     String        // Giá bán lại (Wei)
+  status    ListingStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  seller    User          @relation("SellerListings", fields: [sellerId], references: [id])
+}
 ```
-# Required
-DATABASE_URL=postgresql://...
-AUTH_SECRET=random_secret
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/KEY
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/KEY
-NEXT_PUBLIC_EVENT_FACTORY_ADDRESS=0x316654424537D288670070454f87bf3547341f6C
-NEXT_PUBLIC_MARKETPLACE_ADDRESS=0xFda7d0bA678F72BFCD25cF4082D541bc1C7Da7AA
-PRIVATE_KEY=0x...
 
-# Optional
-RESEND_API_KEY=re_xxxxxxxxxxxxx
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+---
 
-### contracts/.env
-```
-SEPOLIA_RPC_URL=https://sepolia.drpc.org
-PRIVATE_KEY=0x...
-```
+## 3. Thiết kế Luồng Nghiệp Vụ Chính (Core Flow Design)
 
-## Future Improvements
+### 3.1. Luồng Mua Vé Bằng Coupon Giảm Giá < 100% (Direct Transfer)
+Để giảm chi phí gas cho hợp đồng và tối ưu hóa việc phân chia doanh thu trực tiếp cho Organizer:
+1.  **Client:**
+    *   Người dùng áp dụng coupon giảm giá (Ví dụ: Giảm 50% từ `0.02 POL` còn `0.01 POL`).
+    *   Client gọi MetaMask yêu cầu chuyển khoản trực tiếp `0.01 POL` từ ví người mua tới địa chỉ **Ví của Organizer** (đã cấu hình trong DB).
+    *   Giao dịch chuyển khoản thành công on-chain, client nhận được `txHash`.
+    *   Client gửi request gồm `txHash`, `eventId`, `tierId`, và `couponCode` sang `/api/tickets/mint`.
+2.  **Server API:**
+    *   Server truy vấn RPC Sepolia để lấy thông tin giao dịch của `txHash` vừa gửi.
+    *   Xác thực: Trạng thái giao dịch phải thành công (`status === "success"`), địa chỉ nhận tiền phải trùng với ví của Organizer sự kiện đó, và số tiền gửi phải lớn hơn hoặc bằng mức giá sau giảm giá.
+    *   Kiểm tra cơ sở dữ liệu: Đảm bảo `txHash` chưa từng được sử dụng để tránh lỗi tấn công phát lại (Replay attack).
+    *   Server dùng ví hệ thống gọi hàm `organizerMint()` trên hợp đồng thông minh để tạo vé NFT không tốn gas cho người mua.
+    *   Ghi nhận `Order` và `Ticket` vào Database.
 
-### Ưu tiên cao
-- IPFS metadata upload (Pinata) — NFT metadata thực tế
-- Contract verification trên Etherscan
-- Deploy lên Vercel (production)
+### 3.2. Soát Vé Bằng QR Code Động (Secure QR Code Flow)
+Ngăn chặn hành vi gian lận sao chép ảnh chụp màn hình QR code:
+1.  **Client (Người dùng hiển thị vé):**
+    *   Yêu cầu ví cá nhân ký thông điệp offline (EIP-191): `Verify ownership of Ticket #[tokenId] at timestamp: [timestamp]`.
+    *   Sinh mã QR chứa JSON gồm: `ticketId`, `tokenId`, `owner`, `timestamp`, `signature`.
+    *   Vòng lặp client tự động đếm ngược 60 giây, sau 60 giây bắt đầu mờ đi và yêu cầu người dùng bấm "Tải lại mã mới" để ký lại.
+2.  **Client Soát vé (Organizer):**
+    *   Quét mã QR, phân tích cú pháp chuỗi JSON.
+    *   Kiểm tra mốc thời gian `timestamp` trong payload so với thời gian hiện tại của thiết bị soát vé. Nếu chênh lệch quá 60 giây, từ chối check-in ngay tại client (Hiện thông báo lỗi màu đỏ kèm âm thanh **buzz** cảnh báo).
+    *   Nếu thời gian hợp lệ, gửi dữ liệu payload lên `/api/tickets/check-in`.
+3.  **Server API:**
+    *   Xác minh lại mốc thời gian.
+    *   Dùng thư viện `viem` (`recoverAddress`) để giải mã khôi phục lại địa chỉ ví từ chữ ký số `signature` và thông điệp tương ứng.
+    *   So sánh địa chỉ ví khôi phục được với địa chỉ ví sở hữu thực tế của NFT vé đó trên blockchain hoặc DB. Nếu khớp, tiến hành đánh dấu vé đã dùng và gọi `useTicket()` on-chain.
 
-### Ưu tiên trung bình
-- Full-text search (pg_trgm) — Tìm kiếm tốt hơn
-- Coupon system — Mã giảm giá
-- Event edit form nâng cao (video banner, FAQ, lịch trình)
-- Export CSV — Xuất danh sách attendees
-- Framer Motion animations
+---
 
-### Ưu tiên thấp
-- E2E tests (Playwright/Cypress)
-- Admin panel — Platform overview
-- Ticket transfer — Chuyển vé cho người khác
-- Email reminders — Nhắc nhở trước sự kiện
-- Sự kiện trực tuyến (Zoom integration)
-- Mobile app (React Native)
+## 4. Tích hợp Lưu trữ IPFS Metadata (Pinata)
+Để đảm bảo vé NFT hiển thị đúng hình ảnh và thông tin chi tiết trên các chợ NFT công cộng như OpenSea:
+*   Module [pinata.ts](file:///D:/HK8/TicketNFT/web/lib/pinata.ts) thiết lập kết nối REST API tới hệ thống lưu trữ Pinata IPFS.
+*   **Cấu trúc Metadata JSON chuẩn OpenSea:**
+    ```json
+    {
+      "name": "Đại hội Công nghệ Web3 2026 - Vé VIP #1",
+      "description": "Vé tham dự sự kiện Đại hội Công nghệ Web3 2026. Hạng vé: VIP.",
+      "image": "ipfs://QmBannerImageCID...",
+      "external_url": "http://localhost:3000/events/cuid_event...",
+      "attributes": [
+        { "trait_type": "Event", "value": "Đại hội Công nghệ Web3 2026" },
+        { "trait_type": "Tier", "value": "VIP" },
+        { "trait_type": "Venue", "value": "Convention Center, District 1, HCMC" },
+        { "trait_type": "Date", "value": "2026-06-01" }
+      ]
+    }
+    ```
+*   **Luồng chuẩn bị (Client-side Mint):** Trước khi người dùng mint vé qua MetaMask thông thường, client gọi API `/api/tickets/prepare-metadata` để server sinh JSON metadata, upload lên Pinata và trả về chuỗi `tokenURI` (Ví dụ: `ipfs://Qm...`). Client sau đó truyền trực tiếp URI này vào giao dịch mint của MetaMask.
+
+---
+
+## 5. Tối ưu hóa Tìm kiếm Cơ sở Dữ liệu (Fuzzy Search pg_trgm)
+Nâng cao trải nghiệm tìm kiếm sự kiện:
+*   Kích hoạt extension `pg_trgm` trong PostgreSQL để hỗ trợ tính toán độ tương đồng của chuỗi văn bản.
+*   Xây dựng chỉ mục GIN trgm trên các cột dữ liệu hay tìm kiếm:
+    ```sql
+    CREATE INDEX IF NOT EXISTS event_title_trgm_idx ON "Event" USING gin (title gin_trgm_ops);
+    CREATE INDEX IF NOT EXISTS event_venue_trgm_idx ON "Event" USING gin (venue gin_trgm_ops);
+    ```
+*   Trong Prisma, các câu lệnh tìm kiếm sử dụng `contains` hoặc `mode: 'insensitive'` sẽ tự động tận dụng index này, giúp tăng tốc độ tìm kiếm văn bản lên nhiều lần và hỗ trợ tìm kiếm không dấu/gõ sai ký tự nhẹ.

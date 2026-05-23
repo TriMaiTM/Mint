@@ -124,9 +124,12 @@ export async function POST(req: Request) {
     // On-chain check-in: call useTicket(tokenId) on the event contract
     let onchainWarning: string | undefined;
     try {
-      const privateKey = process.env.PRIVATE_KEY;
+      let privateKey = process.env.PRIVATE_KEY;
       if (!privateKey) {
         throw new Error("PRIVATE_KEY env variable not set");
+      }
+      if (!privateKey.startsWith("0x")) {
+        privateKey = `0x${privateKey}`;
       }
 
       const contractAddress = ticket.event.contractAddress;

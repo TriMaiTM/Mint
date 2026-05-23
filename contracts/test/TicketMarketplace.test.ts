@@ -20,7 +20,7 @@ describe("TicketMarketplace", function () {
   const PLATFORM_FEE_BPS = 250; // 2.5%
   const ROYALTY_BPS = 500; // 5%
   const TICKET_PRICE = ethers.parseEther("1.0"); // Primary market price
-  const LIST_PRICE = ethers.parseEther("2.0"); // Secondary market price
+  const LIST_PRICE = ethers.parseEther("1.2"); // Secondary market price (max 1.2x)
 
   beforeEach(async function () {
     [owner, organizer, buyer, seller, platformFeeRecipient] =
@@ -132,11 +132,12 @@ describe("TicketMarketplace", function () {
 
     it("should allow seller to update price", async function () {
       await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      const initialPrice = ethers.parseEther("1.1");
       await marketplace
         .connect(seller)
-        .listTicket(await eventNft.getAddress(), 1, LIST_PRICE);
+        .listTicket(await eventNft.getAddress(), 1, initialPrice);
 
-      const newPrice = ethers.parseEther("3.0");
+      const newPrice = ethers.parseEther("1.2");
       await expect(
         marketplace
           .connect(seller)
@@ -190,6 +191,104 @@ describe("TicketMarketplace", function () {
       // Seller can manually call nft.approve(address(0), tokenId) if desired
       const approved = await eventNft.getApproved(1);
       expect(approved).to.equal(await marketplace.getAddress());
+    });
+
+    it("should reject listing if price exceeds the maximum limit", async function () {
+      await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      const tooHighPrice = ethers.parseEther("1.21"); // exceeds 1.2x of 1.0 ETH
+      await expect(
+        marketplace
+          .connect(seller)
+          .listTicket(await eventNft.getAddress(), 1, tooHighPrice)
+      ).to.be.revertedWith("Price exceeds maximum");
+    });
+
+    it("should reject price update if new price exceeds the maximum limit", async function () {
+      await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      await marketplace
+        .connect(seller)
+        .listTicket(await eventNft.getAddress(), 1, LIST_PRICE); // listed at 1.2 ETH
+
+      const tooHighPrice = ethers.parseEther("1.21"); // exceeds 1.2x of 1.0 ETH
+      await expect(
+        marketplace
+          .connect(seller)
+          .updatePrice(await eventNft.getAddress(), 1, tooHighPrice)
+      ).to.be.revertedWith("Price exceeds maximum");
+    });
+
+    it("should reject purchase if the buyer is the seller", async function () {
+      await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      await marketplace
+        .connect(seller)
+        .listTicket(await eventNft.getAddress(), 1, LIST_PRICE);
+
+      await expect(
+        marketplace
+          .connect(seller)
+          .buyTicket(await eventNft.getAddress(), 1, { value: LIST_PRICE })
+      ).to.be.revertedWith("Seller cannot buy own ticket");
+    });
+
+    it("should allow marketplace owner to cancel listing", async function () {
+      await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      await marketplace
+        .connect(seller)
+        .listTicket(await eventNft.getAddress(), 1, LIST_PRICE);
+
+      await expect(
+        marketplace
+          .connect(owner)
+          .cancelListing(await eventNft.getAddress(), 1)
+      )
+        .to.emit(marketplace, "ListingCancelled")
+        .withArgs(seller.address, await eventNft.getAddress(), 1);
+
+      const listingKey = await marketplace.listingKey(
+        await eventNft.getAddress(),
+        1
+      );
+      const listing = await marketplace.listings(listingKey);
+      expect(listing.active).to.be.false;
+    });
+
+    it("should allow NFT owner to cancel listing if the seller is no longer the owner", async function () {
+      await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      await marketplace
+        .connect(seller)
+        .listTicket(await eventNft.getAddress(), 1, LIST_PRICE);
+
+      // Direct transfer
+      await eventNft.connect(seller).transferFrom(seller.address, buyer.address, 1);
+      expect(await eventNft.ownerOf(1)).to.equal(buyer.address);
+
+      await expect(
+        marketplace
+          .connect(buyer)
+          .cancelListing(await eventNft.getAddress(), 1)
+      )
+        .to.emit(marketplace, "ListingCancelled")
+        .withArgs(seller.address, await eventNft.getAddress(), 1);
+
+      const listingKey = await marketplace.listingKey(
+        await eventNft.getAddress(),
+        1
+      );
+      const listing = await marketplace.listings(listingKey);
+      expect(listing.active).to.be.false;
+    });
+
+    it("should reject cancel listing from unauthorized users", async function () {
+      await eventNft.connect(seller).approve(await marketplace.getAddress(), 1);
+      await marketplace
+        .connect(seller)
+        .listTicket(await eventNft.getAddress(), 1, LIST_PRICE);
+
+      await expect(
+        marketplace
+          .connect(buyer)
+          .cancelListing(await eventNft.getAddress(), 1)
+      ).to.be.revertedWith("Not authorized");
     });
   });
 

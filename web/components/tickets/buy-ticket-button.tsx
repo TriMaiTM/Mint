@@ -90,9 +90,10 @@ export function BuyTicketButton({
   }
 
   async function handleFreeMint() {
+    setError(null);
+
     setIsBuying(true);
     setLoadingMessage("Processing free ticket claim...");
-    setError(null);
     try {
       const response = await fetch("/api/tickets/mint", {
         method: "POST",
@@ -121,9 +122,10 @@ export function BuyTicketButton({
   }
 
   async function handleBuy() {
+    setError(null);
+
     setIsBuying(true);
     setLoadingMessage(null);
-    setError(null);
 
     try {
       if (!walletClient || !publicClient || !address) {
@@ -326,20 +328,31 @@ export function BuyTicketButton({
             onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
             style={{
               flex: 1,
-              padding: "6px 12px",
+              padding: "8px 12px",
               borderRadius: "var(--radius-md)",
               border: "1px solid var(--color-hairline)",
               fontSize: "0.85rem",
               background: "var(--color-canvas)",
               color: "inherit",
+              height: "38px",
             }}
           />
           <button
             type="button"
-            className="btn-secondary"
             onClick={handleApplyCoupon}
             disabled={isValidatingCoupon || !couponInput.trim()}
-            style={{ padding: "6px 12px", fontSize: "0.85rem", borderRadius: "var(--radius-md)" }}
+            style={{
+              padding: "0 16px",
+              fontSize: "0.85rem",
+              borderRadius: "var(--radius-md)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              height: "38px",
+              backgroundColor: "var(--color-primary)",
+              color: "var(--color-on-primary)",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
           >
             {isValidatingCoupon ? "..." : "Áp dụng"}
           </button>
@@ -358,7 +371,7 @@ export function BuyTicketButton({
           }}
         >
           <span style={{ color: "green", fontWeight: "bold" }}>
-            🎟️ {appliedCoupon} (-
+            {appliedCoupon} (-
             {couponData?.discountType === "PERCENTAGE"
               ? `${couponData.discountValue}%`
               : `${couponData?.discountValue} POL`}
@@ -432,28 +445,7 @@ export function BuyTicketButton({
         </p>
       )}
 
-      {/* MetaMask Explanation Note */}
-      {!isFree && (
-        <div
-          style={{
-            marginTop: "var(--space-xs)",
-            fontSize: "0.8rem",
-            color: "var(--color-text-muted, #71717a)",
-            backgroundColor: "var(--color-surface-soft, rgba(255, 255, 255, 0.03))",
-            padding: "10px 14px",
-            borderRadius: "var(--radius-md, 8px)",
-            border: "1px solid var(--color-hairline, rgba(255, 255, 255, 0.08))",
-            lineHeight: "1.4",
-          }}
-        >
-          <span style={{ fontWeight: "bold", display: "block", marginBottom: "4px", color: "var(--color-text-body, #e4e4e7)" }}>
-            💡 Lưu ý về hiển thị giá trên MetaMask:
-          </span>
-          Khi thực hiện giao dịch, MetaMask sẽ hiển thị số tiền thanh toán chính xác là{" "}
-          <strong>{(couponData ? couponData.discountedPrice : Number(tierPrice)).toFixed(4)} POL</strong>.
-          Dòng chữ USD (ví dụ <em>-$0.0292</em>) hiển thị bên dưới chỉ là giá trị quy đổi ước tính của MetaMask dựa trên tỷ giá thị trường, không phải số lượng POL thực tế bị trừ. Hãy an tâm là giao dịch chỉ trừ đúng số POL của vé.
-        </div>
-      )}
+
 
       <LoadingModal show={!!loadingMessage} message={loadingMessage ?? ""} />
     </div>

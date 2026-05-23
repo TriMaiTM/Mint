@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/admin", label: "Dashboard", icon: "📊", exact: true },
-  { href: "/admin/users", label: "Users", icon: "👥", exact: false },
-  { href: "/admin/events", label: "Events", icon: "🎟️", exact: false },
-  { href: "/admin/settings", label: "Settings", icon: "⚙️", exact: false },
+  { href: "/admin", label: "Dashboard", exact: true, icon: "📊" },
+  { href: "/admin/users", label: "Users", exact: false, icon: "👥" },
+  { href: "/admin/events", label: "Events", exact: false, icon: "🎫" },
+  { href: "/admin/settings", label: "Settings", exact: false, icon: "⚙️" },
 ];
 
 export function AdminSidebar() {

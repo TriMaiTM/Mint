@@ -5,6 +5,7 @@ import { BuyListedTicket } from "@/components/marketplace/buy-listed-ticket";
 import { cookies } from "next/headers";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { Nav } from "@/components/layout/nav";
+import { Footer } from "@/components/layout/footer";
 
 export const dynamic = "force-dynamic";
 
@@ -137,7 +138,7 @@ export default async function MarketplacePage() {
                           className="text-caption-md text-muted"
                           style={{ textAlign: "right" }}
                         >
-                          📍 {listing.event.venue}
+                          {listing.event.venue}
                         </p>
                       )}
                     </div>
@@ -180,37 +181,7 @@ export default async function MarketplacePage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="footer" style={{ marginTop: "var(--space-section)" }}>
-        <div className="footer-grid">
-          <div>
-            <p className="footer-col-header">TicketNFT</p>
-            <p className="text-body-sm text-muted">
-              NFT-based event ticketing on Polygon.
-            </p>
-          </div>
-          <div>
-            <p className="footer-col-header">Explore</p>
-            <Link href="/events" className="footer-link">
-              Events
-            </Link>
-            <Link href="/marketplace" className="footer-link">
-              Marketplace
-            </Link>
-          </div>
-          <div>
-            <p className="footer-col-header">Account</p>
-            <Link href="/my-tickets" className="footer-link">
-              My Tickets
-            </Link>
-          </div>
-          <div>
-            <p className="footer-col-header">Info</p>
-            <p className="text-body-sm text-muted">
-              Built with smart contracts for transparent, verifiable tickets.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

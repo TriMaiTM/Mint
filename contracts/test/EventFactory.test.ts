@@ -242,4 +242,31 @@ describe("EventFactory + EventTicketNFT", function () {
     expect(await eventContract.walletMinted(buyer.address)).to.equal(0);
     expect(await eventContract.walletMinted(other.address)).to.equal(0);
   });
+
+  it("reverts minting when the event has already ended", async function () {
+    const { organizer, buyer, other, eventContract } = await deployFixture();
+
+    await eventContract.connect(organizer).setEventEnded(true);
+
+    await expect(
+      eventContract
+        .connect(buyer)
+        .mint(0, "ipfs://metadata-1", { value: ethers.parseEther("0.01") })
+    ).to.be.revertedWithCustomError(eventContract, "EventAlreadyEnded");
+
+    await expect(
+      eventContract
+        .connect(organizer)
+        .organizerMint(buyer.address, 0, "ipfs://organizer-1")
+    ).to.be.revertedWithCustomError(eventContract, "EventAlreadyEnded");
+
+    await expect(
+      eventContract
+        .connect(organizer)
+        .batchOrganizerMint([buyer.address, other.address], 0, [
+          "ipfs://batch-1",
+          "ipfs://batch-2",
+        ])
+    ).to.be.revertedWithCustomError(eventContract, "EventAlreadyEnded");
+  });
 });

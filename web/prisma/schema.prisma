@@ -100,6 +100,7 @@ model TicketTier {
   soldCount   Int      @default(0)
   metadataURI String?
   benefits    String?
+  seatingLayout Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -119,6 +120,7 @@ model Ticket {
   isUsed    Boolean      @default(false)
   usedAt    DateTime?
   qrCode    String?
+  seatCode  String?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 

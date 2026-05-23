@@ -14,7 +14,7 @@ type ListTicketButtonProps = {
   tierName: string;
 };
 
-const MAX_MULTIPLIER = 3;
+const MAX_MULTIPLIER = 1.2;
 
 export function ListTicketButton({
   ticketId,
