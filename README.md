@@ -1,8 +1,8 @@
-# 🎫 TicketNFT — NFT Event Ticketing Platform
+# TicketNFT — NFT Event Ticketing Platform
 
 > A decentralized event ticketing platform where event organizers can create events and sell NFT tickets, attendees can purchase and trade tickets on a secondary marketplace, and check-in is verified via blockchain.
 
-### ✨ New Features (v1.1)
+### New Features (v1.1)
 - **Email Notifications** — Purchase confirmations, listing alerts, sale notifications via Resend
 - **Analytics Dashboard** — Revenue charts, ticket stats, event performance for organizers
 - **Profile Email Settings** — Users can add email to receive notifications
@@ -167,29 +167,29 @@ function getListing(address nftContract, uint256 tokenId) external view returns 
 
 ### For Organizers
 
-- 🎯 **Create Events** — Define title, description, venue, dates, and multiple ticket tiers
-- 📦 **Publish On-Chain** — Deploy NFT contract via `EventFactory` with one click
-- 📊 **Monitor Sales** — Real-time dashboard showing tickets sold per tier
-- 👥 **Attendee List** — View all ticket holders with wallet addresses
-- ✅ **Check-In** — Scan QR codes and verify on-chain ownership via `useTicket()`
-- 💰 **Withdraw Revenue** — Pull funds from smart contract to organizer wallet
+- **Create Events** — Define title, description, venue, dates, and multiple ticket tiers
+- **Publish On-Chain** — Deploy NFT contract via `EventFactory` with one click
+- **Monitor Sales** — Real-time dashboard showing tickets sold per tier
+- **Attendee List** — View all ticket holders with wallet addresses
+- **Check-In** — Scan QR codes and verify on-chain ownership via `useTicket()`
+- **Withdraw Revenue** — Pull funds from smart contract to organizer wallet
 
 ### For Users
 
-- 🔍 **Browse Events** — Search and filter events by category
-- 🎟️ **Buy NFT Tickets** — Purchase with MetaMask on Sepolia testnet
-- 📱 **View Tickets** — See all owned tickets with QR codes
-- 🔄 **Resale** — List tickets on marketplace (price capped at 3x original)
-- 🛒 **Secondary Market** — Buy listed tickets from other users
-- 👤 **Profile** — View wallet info, stats, and purchase history
+- **Browse Events** — Search and filter events by category
+- **Buy NFT Tickets** — Purchase with MetaMask on Sepolia testnet
+- **View Tickets** — See all owned tickets with QR codes
+- **Resale** — List tickets on marketplace (price capped at 3x original)
+- **Secondary Market** — Buy listed tickets from other users
+- **Profile** — View wallet info, stats, and purchase history
 
 ### Shared
 
-- 🔐 **Wallet Auth** — Sign in with MetaMask (EIP-191)
-- 🌙 **Dark Mode** — Full dark theme support
-- 📱 **Responsive** — Works on desktop and mobile
-- 🔔 **Toast Notifications** — Real-time feedback on actions
-- 🔗 **Share Events** — Copy link + social sharing (Twitter/X, Facebook)
+- **Wallet Auth** — Sign in with MetaMask (EIP-191)
+- **Dark Mode** — Full dark theme support
+- **Responsive** — Works on desktop and mobile
+- **Toast Notifications** — Real-time feedback on actions
+- **Share Events** — Copy link + social sharing (Twitter/X, Facebook)
 
 ---
 
