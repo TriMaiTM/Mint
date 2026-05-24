@@ -197,13 +197,13 @@ export default async function ManageEventPage({ params }: Props) {
 
         {/* Agenda */}
         <section style={{ marginBottom: "var(--space-xxl)" }}>
-          <h2 className="text-heading-xl mb-lg">Lịch trình sự kiện (Agenda)</h2>
+          <h2 className="text-heading-xl mb-lg">Event Agenda</h2>
           <AgendaManager eventId={event.id} />
         </section>
 
         {/* FAQs */}
         <section style={{ marginBottom: "var(--space-xxl)" }}>
-          <h2 className="text-heading-xl mb-lg">Câu hỏi thường gặp (FAQs)</h2>
+          <h2 className="text-heading-xl mb-lg">Frequently Asked Questions (FAQs)</h2>
           <FaqManager eventId={event.id} />
         </section>
 

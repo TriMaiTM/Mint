@@ -50,7 +50,7 @@ export function EventCard({
             height: "160px",
             overflow: "hidden",
             borderRadius: "var(--radius-md)",
-            marginBottom: "var(--space-4)",
+            marginBottom: "var(--space-md)",
           }}
         >
           <img
@@ -63,9 +63,9 @@ export function EventCard({
       <div
         style={{
           display: "flex",
-          gap: "var(--space-2)",
+          gap: "var(--space-xs)",
           flexWrap: "wrap",
-          marginBottom: "var(--space-3)",
+          marginBottom: "var(--space-sm)",
         }}
       >
         <span className="chip">{status}</span>
@@ -82,8 +82,8 @@ export function EventCard({
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: "var(--space-3)",
-          marginTop: "var(--space-3)",
+          gap: "var(--space-sm)",
+          marginTop: "var(--space-sm)",
         }}
       >
         <div>
@@ -110,7 +110,7 @@ export function EventCard({
       <Link
         href={`/events/${id}`}
         className="btn-primary"
-        style={{ marginTop: "var(--space-3)" }}
+        style={{ marginTop: "var(--space-md)" }}
       >
         View Tickets
       </Link>

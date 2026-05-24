@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button";
@@ -13,20 +14,97 @@ const NAV_LINKS = [
 ];
 
 const ORGANIZER_LINKS = [
-  { href: "/organizer", label: "Organizer Panel" },
+  { href: "/organizer", label: "Organizer" },
 ];
 
 export function Nav() {
   const pathname = usePathname();
   const { user, isAuthenticated } = useWalletAuth();
   const isOrganizer =
-    isAuthenticated && (user?.role === "ORGANIZER" || user?.role === "ADMIN");
+    isAuthenticated && user?.role === "ORGANIZER";
   const isAdmin = isAuthenticated && user?.role === "ADMIN";
+
+  const [alertText, setAlertText] = useState("");
+  const [isMaintenance, setIsMaintenance] = useState(false);
+
+  useEffect(() => {
+    const checkConfig = () => {
+      if (typeof window !== "undefined") {
+        setAlertText(localStorage.getItem("ticketnft_alert_text") || "");
+        setIsMaintenance(localStorage.getItem("ticketnft_maintenance") === "true");
+      }
+    };
+    checkConfig();
+    window.addEventListener("ticketnft-system-config-changed", checkConfig);
+    return () => window.removeEventListener("ticketnft-system-config-changed", checkConfig);
+  }, []);
+
   return (
-    <nav className="nav-primary">
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", position: "sticky", top: 0, zIndex: 100 }}>
+      {/* Global Banner Tickers */}
+      {isMaintenance && (
+        <div
+          style={{
+            backgroundColor: "var(--color-primary)",
+            color: "#ffffff",
+            padding: "8px var(--space-md)",
+            fontSize: "13px",
+            fontWeight: 700,
+            textAlign: "center",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            zIndex: 1000
+          }}
+        >
+          <span>⚠️ WARNING: System is currently undergoing scheduled maintenance. Some features may be read-only.</span>
+        </div>
+      )}
+      {alertText && !isMaintenance && (
+        <div
+          style={{
+            backgroundColor: "var(--color-accent-blue)",
+            color: "#ffffff",
+            padding: "8px var(--space-md)",
+            fontSize: "13px",
+            fontWeight: 700,
+            textAlign: "center",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            zIndex: 1000
+          }}
+        >
+          <span>📢 {alertText}</span>
+        </div>
+      )}
+
+      <nav className="nav-primary" style={{ position: "relative", top: "auto" }}>
       <div className="nav-inner">
-        <Link href="/" className="nav-logo" style={{ flexShrink: 0 }}>
-          TicketNFT
+        <Link
+          href="/"
+          className="nav-logo"
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            background: "none",
+            WebkitTextFillColor: "unset",
+          }}
+        >
+          <img
+            src="/logo_mint_png.png"
+            alt="TicketNFT"
+            style={{
+              height: "42px",
+              width: "auto",
+              objectFit: "contain",
+            }}
+          />
         </Link>
 
         <form action="/events" method="GET" className="nav-search-form" style={{ margin: 0, marginLeft: "var(--space-md)" }}>
@@ -71,8 +149,8 @@ export function Nav() {
             alignItems: "center",
             gap: "var(--space-xl)",
             flex: 1,
-            justifyContent: "center",
-            marginRight: "100px",
+            justifyContent: "flex-start",
+            marginLeft: "var(--space-xl)",
           }}
         >
           {NAV_LINKS.map((link) => {
@@ -82,11 +160,22 @@ export function Nav() {
                 key={link.href}
                 href={link.href}
                 className={isActive ? "nav-link nav-link-active" : "nav-link"}
+                style={{ whiteSpace: "nowrap" }}
               >
                 {link.label}
               </Link>
             );
           })}
+
+          {isAuthenticated && !isOrganizer && !isAdmin && (
+            <Link
+              href="/request-organizer"
+              className={pathname === "/request-organizer" ? "nav-link nav-link-active" : "nav-link"}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              Become Organizer
+            </Link>
+          )}
 
           {isOrganizer && (
             <span
@@ -106,6 +195,7 @@ export function Nav() {
                   key={link.href}
                   href={link.href}
                   className={isActive ? "nav-link nav-link-active" : "nav-link"}
+                  style={{ whiteSpace: "nowrap" }}
                 >
                   {link.label}
                 </Link>
@@ -116,8 +206,9 @@ export function Nav() {
             <Link
               href="/admin"
               className={pathname.startsWith("/admin") ? "nav-link nav-link-active" : "nav-link"}
+              style={{ whiteSpace: "nowrap" }}
             >
-              Admin Panel
+              Admin
             </Link>
           )}
         </div>
@@ -142,5 +233,7 @@ export function Nav() {
           <ConnectWalletButton />
         </div>
       </div>
-    </nav>
-  );}
+      </nav>
+    </div>
+  );
+}

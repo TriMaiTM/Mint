@@ -55,6 +55,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
+    // Read platform configurations to enforce policies from DB
+    let allowUserRegistration = true;
+    let blockedWallets: string[] = [];
+    try {
+      const config = await prisma.platformConfig.findUnique({
+        where: { id: "global" },
+      });
+      if (config) {
+        allowUserRegistration = config.allowUserRegistration !== false;
+        blockedWallets = Array.isArray(config.blockedWallets) ? config.blockedWallets : [];
+      }
+    } catch (e) {
+      console.error("Error reading platform config in verify API:", e);
+    }
+
+    // 1. Enforce blocked wallets blocklist
+    const isBlocked = blockedWallets.map((w) => w.toLowerCase()).includes(walletAddress);
+    if (isBlocked) {
+      return NextResponse.json(
+        { error: "Your wallet address is restricted from accessing this platform." },
+        { status: 403 }
+      );
+    }
+
+    // 2. Enforce new registrations allowed setting
+    const existingUser = await prisma.user.findUnique({
+      where: { walletAddress },
+    });
+
+    if (!existingUser && !allowUserRegistration) {
+      return NextResponse.json(
+        { error: "New user registrations are currently disabled by the Administrator." },
+        { status: 403 }
+      );
+    }
+
     const user = await prisma.user.upsert({
       where: { walletAddress },
       update: {},

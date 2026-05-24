@@ -1,0 +1,9 @@
+{
+  "maintenanceMode": false,
+  "allowEventCreation": true,
+  "allowUserRegistration": true,
+  "allowSecondaryMarketplace": false,
+  "blockedWallets": [],
+  "alertBannerText": "",
+  "maxTickets": 5
+}

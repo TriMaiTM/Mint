@@ -39,11 +39,11 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
       if (res.ok && payload.data) {
         setAgenda(payload.data);
       } else {
-        toast(payload.error ?? "Lỗi khi tải lịch trình", "error");
+        toast(payload.error ?? "Error loading agenda", "error");
       }
     } catch (err) {
       console.error(err);
-      toast("Lỗi kết nối mạng khi tải lịch trình", "error");
+      toast("Network error while loading agenda", "error");
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +52,7 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!time.trim() || !title.trim()) {
-      toast("Vui lòng nhập thời gian và tiêu đề", "error");
+      toast("Please enter time and title", "error");
       return;
     }
 
@@ -71,7 +71,7 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
 
       const payload = await res.json();
       if (res.ok && payload.data) {
-        toast("Thêm mục lịch trình thành công!", "success");
+        toast("Agenda item added successfully!", "success");
         setAgenda([...agenda, payload.data]);
         // Reset form
         setTime("");
@@ -79,18 +79,18 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
         setDescription("");
         setSpeaker("");
       } else {
-        toast(payload.error ?? "Lỗi khi tạo mục lịch trình", "error");
+        toast(payload.error ?? "Error creating agenda item", "error");
       }
     } catch (err) {
       console.error(err);
-      toast("Lỗi kết nối mạng khi thêm lịch trình", "error");
+      toast("Network error while adding agenda item", "error");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDelete(agendaId: string) {
-    if (!confirm("Bạn có chắc chắn muốn xóa mục lịch trình này không?")) return;
+    if (!confirm("Are you sure you want to delete this agenda item?")) return;
 
     try {
       const res = await fetch(`/api/organizer/events/${eventId}/agenda?agendaId=${agendaId}`, {
@@ -99,14 +99,14 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
 
       const payload = await res.json();
       if (res.ok) {
-        toast("Đã xóa mục lịch trình!", "success");
+        toast("Agenda item deleted!", "success");
         setAgenda(agenda.filter((item) => item.id !== agendaId));
       } else {
-        toast(payload.error ?? "Lỗi khi xóa lịch trình", "error");
+        toast(payload.error ?? "Error deleting agenda item", "error");
       }
     } catch (err) {
       console.error(err);
-      toast("Lỗi kết nối mạng khi xóa lịch trình", "error");
+      toast("Network error while deleting agenda item", "error");
     }
   }
 
@@ -114,12 +114,12 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "var(--space-xxl)" }}>
       {/* Creation Form */}
       <div className="card" style={{ padding: "var(--space-xl)" }}>
-        <h3 className="text-heading-lg mb-md">Thêm lịch trình sự kiện</h3>
+        <h3 className="text-heading-lg mb-md">Add Event Agenda</h3>
         <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-md)" }}>
             <div>
               <label className="text-caption-md text-muted" style={{ display: "block", marginBottom: "var(--space-xs)" }}>
-                Mốc thời gian (Ví dụ: "09:00 - 10:30" hoặc "09:00 AM")
+                Time Slot (e.g. "09:00 - 10:30" or "09:00 AM")
               </label>
               <input
                 type="text"
@@ -140,11 +140,11 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
 
             <div>
               <label className="text-caption-md text-muted" style={{ display: "block", marginBottom: "var(--space-xs)" }}>
-                Tiêu đề hoạt động
+                Activity Title
               </label>
               <input
                 type="text"
-                placeholder="Khai mạc & Check-in"
+                placeholder="Opening & Check-in"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 style={{
@@ -161,7 +161,7 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
 
             <div>
               <label className="text-caption-md text-muted" style={{ display: "block", marginBottom: "var(--space-xs)" }}>
-                Diễn giả / Người phụ trách (Tùy chọn)
+                Speaker / Host (Optional)
               </label>
               <input
                 type="text"
@@ -182,10 +182,10 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
 
           <div>
             <label className="text-caption-md text-muted" style={{ display: "block", marginBottom: "var(--space-xs)" }}>
-              Mô tả chi tiết hoạt động (Tùy chọn)
+              Detailed Description (Optional)
             </label>
             <textarea
-              placeholder="Đón khách, kiểm tra vé NFT, phát tài liệu sự kiện và ổn định chỗ ngồi..."
+              placeholder="Welcome guests, check NFT tickets, distribute event materials, and assist with seating..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -207,19 +207,19 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
             disabled={isSubmitting}
             style={{ alignSelf: "flex-start", marginTop: "var(--space-xs)" }}
           >
-            {isSubmitting ? "Đang xử lý..." : "➕ Thêm lịch trình"}
+            {isSubmitting ? "Adding..." : "➕ Add Agenda Item"}
           </button>
         </form>
       </div>
 
       {/* List */}
       <div className="card" style={{ padding: "var(--space-xl)" }}>
-        <h3 className="text-heading-lg mb-md">Lịch trình hiện tại</h3>
+        <h3 className="text-heading-lg mb-md">Current Agenda</h3>
 
         {isLoading ? (
-          <p className="text-body-md text-muted">Đang tải lịch trình...</p>
+          <p className="text-body-md text-muted">Loading agenda...</p>
         ) : agenda.length === 0 ? (
-          <p className="text-body-md text-muted">Chưa có mốc lịch trình nào được thiết lập cho sự kiện này.</p>
+          <p className="text-body-md text-muted">No agenda items have been set up for this event yet.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
             {agenda.map((item) => (
@@ -241,7 +241,7 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
                     <span className="text-body-sm-strong" style={{ color: "var(--color-primary)", fontWeight: "600" }}>{item.time}</span>
                     <span className="text-body-strong">{item.title}</span>
                     {item.speaker && (
-                      <span className="chip" style={{ fontSize: "11px", padding: "2px 8px" }}>🎙️ Diễn giả: {item.speaker}</span>
+                      <span className="chip" style={{ fontSize: "11px", padding: "2px 8px" }}>🎙️ Speaker: {item.speaker}</span>
                     )}
                   </div>
                   {item.description && (
@@ -259,7 +259,7 @@ export function AgendaManager({ eventId }: AgendaManagerProps) {
                     fontSize: "13px",
                   }}
                 >
-                  Xóa
+                  Delete
                 </button>
               </div>
             ))}

@@ -26,7 +26,11 @@ export function QRScanner({ onScanSuccess, isPaused }: QRScannerProps) {
 
     if (isPaused) {
       if (scanner.isScanning) {
-        scanner.pause();
+        try {
+          scanner.pause();
+        } catch (e) {
+          console.warn("Dynamic pause failed:", e);
+        }
       }
     } else {
       try {
@@ -42,6 +46,7 @@ export function QRScanner({ onScanSuccess, isPaused }: QRScannerProps) {
     let html5QrCode: Html5Qrcode | null = null;
     let isStarting = false;
     let isStarted = false;
+    let observer: MutationObserver | null = null;
 
     const container = containerRef.current;
     if (!container) return;
@@ -53,6 +58,29 @@ export function QRScanner({ onScanSuccess, isPaused }: QRScannerProps) {
     scannerDiv.style.width = "100%";
     scannerDiv.style.height = "100%";
     container.appendChild(scannerDiv);
+
+    // Watch for <video> elements added by html5-qrcode and override play()
+    observer = new MutationObserver((mutations) => {
+      const video = scannerDiv.querySelector("video");
+      if (video && !(video as any).__playPatched) {
+        (video as any).__playPatched = true;
+        const originalPlay = video.play;
+        video.play = function (...args) {
+          return originalPlay.apply(this, args).catch((err: any) => {
+            if (
+              err?.name === "AbortError" ||
+              err?.message?.includes("media was removed") ||
+              err?.message?.includes("interrupted")
+            ) {
+              console.warn("Caught play() interruption error safely.");
+              return;
+            }
+            return Promise.reject(err);
+          });
+        };
+      }
+    });
+    observer.observe(scannerDiv, { childList: true, subtree: true });
 
     const startScanner = async () => {
       try {
@@ -70,7 +98,11 @@ export function QRScanner({ onScanSuccess, isPaused }: QRScannerProps) {
           },
           (decodedText) => {
             if (html5QrCode?.isScanning) {
-              html5QrCode.pause();
+              try {
+                html5QrCode.pause();
+              } catch (e) {
+                console.warn("Callback pause failed:", e);
+              }
             }
             onScanSuccess(decodedText);
           },
@@ -83,7 +115,11 @@ export function QRScanner({ onScanSuccess, isPaused }: QRScannerProps) {
 
         // If the scanner should be paused immediately after starting
         if (isMounted && isPausedRef.current && html5QrCode.isScanning) {
-          html5QrCode.pause();
+          try {
+            html5QrCode.pause();
+          } catch (e) {
+            console.warn("Immediate start pause failed:", e);
+          }
         }
       } catch (err) {
         isStarting = false;
@@ -101,6 +137,10 @@ export function QRScanner({ onScanSuccess, isPaused }: QRScannerProps) {
     return () => {
       isMounted = false;
       const cleanup = async () => {
+        if (observer) {
+          observer.disconnect();
+        }
+
         // Wait if scanner is in the middle of starting up
         let attempts = 0;
         while (isStarting && attempts < 20) {

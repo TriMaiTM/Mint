@@ -126,6 +126,18 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const maxVal = Math.max(
+    ...stats.dailyStats.map((d) => d.primary + d.secondary),
+    0.001
+  );
+  const yTicks = [
+    maxVal,
+    maxVal * 0.75,
+    maxVal * 0.5,
+    maxVal * 0.25,
+    0,
+  ];
+
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
@@ -238,80 +250,136 @@ export default function AdminDashboardPage() {
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
-              gap: "var(--space-xl)",
-              height: "220px",
-              padding: "var(--space-md) var(--space-md) 0 var(--space-md)",
+              height: "240px",
+              position: "relative",
             }}
           >
-            {stats.dailyStats.map((day) => {
-              const maxVal = Math.max(
-                ...stats.dailyStats.map((d) => d.primary + d.secondary),
-                0.001
-              );
-              const primHeight = (day.primary / maxVal) * 100;
-              const secHeight = (day.secondary / maxVal) * 100;
+            {/* Y-Axis Labels */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                height: "200px",
+                paddingRight: "var(--space-md)",
+                borderRight: "1px solid var(--color-hairline)",
+                textAlign: "right",
+                width: "60px",
+                flexShrink: 0,
+                fontSize: "11px",
+                color: "var(--color-mute)",
+                fontFamily: "monospace",
+              }}
+            >
+              {yTicks.map((tick, idx) => (
+                <span key={idx}>{tick.toFixed(3)}</span>
+              ))}
+            </div>
 
-              return (
-                <div
-                  key={day.date}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    height: "100%",
-                    justifyContent: "flex-end",
-                    gap: "var(--space-xs)",
-                  }}
-                >
+            {/* Bars Area */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "var(--space-xl)",
+                height: "200px",
+                flex: 1,
+                paddingLeft: "var(--space-md)",
+                position: "relative",
+              }}
+            >
+              {/* Horizontal helper gridlines */}
+              <div style={{ position: "absolute", left: 0, right: 0, top: "25%", borderTop: "1px dashed var(--color-hairline)", opacity: 0.5, pointerEvents: "none" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, top: "50%", borderTop: "1px dashed var(--color-hairline)", opacity: 0.5, pointerEvents: "none" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, top: "75%", borderTop: "1px dashed var(--color-hairline)", opacity: 0.5, pointerEvents: "none" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, borderBottom: "1px solid var(--color-hairline)", opacity: 0.8, pointerEvents: "none" }} />
+
+              {stats.dailyStats.map((day) => {
+                const primHeight = (day.primary / maxVal) * 100;
+                const secHeight = (day.secondary / maxVal) * 100;
+
+                return (
                   <div
+                    key={day.date}
                     style={{
-                      width: "100%",
+                      flex: 1,
+                      height: "100%",
                       display: "flex",
-                      alignItems: "flex-end",
-                      justifyContent: "center",
-                      gap: "4px",
-                      height: "80%",
+                      flexDirection: "column",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      position: "relative",
+                      zIndex: 2,
                     }}
                   >
-                    {/* Primary volume bar */}
+                    {/* Bars Container */}
                     <div
-                      title={`Primary: ${day.primary.toFixed(4)} POL`}
                       style={{
-                        width: "16px",
-                        height: `${Math.max(primHeight, 2)}%`,
-                        backgroundColor: "var(--color-success)",
-                        borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
-                        minHeight: "4px",
+                        display: "flex",
+                        alignItems: "flex-end",
+                        justifyContent: "center",
+                        gap: "4px",
+                        height: "100%",
+                        width: "100%",
+                        paddingBottom: "2px",
                       }}
-                    />
-                    {/* Secondary volume bar */}
+                    >
+                      {/* Primary volume bar */}
+                      <div
+                        title={`Primary: ${day.primary.toFixed(4)} POL`}
+                        style={{
+                          width: "16px",
+                          height: `${Math.max(primHeight, 2)}%`,
+                          backgroundColor: "var(--color-success)",
+                          borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
+                          minHeight: "2px",
+                          transition: "height 0.3s ease",
+                          boxShadow: "0 2px 6px rgba(16, 185, 129, 0.15)",
+                        }}
+                      />
+                      {/* Secondary volume bar */}
+                      <div
+                        title={`Secondary: ${day.secondary.toFixed(4)} POL`}
+                        style={{
+                          width: "16px",
+                          height: `${Math.max(secHeight, 2)}%`,
+                          backgroundColor: "var(--color-primary)",
+                          borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
+                          minHeight: "2px",
+                          transition: "height 0.3s ease",
+                          boxShadow: "0 2px 6px rgba(230, 0, 35, 0.15)",
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Labels below the axis line (absolutely positioned below the 200px boundary) */}
                     <div
-                      title={`Secondary: ${day.secondary.toFixed(4)} POL`}
                       style={{
-                        width: "16px",
-                        height: `${Math.max(secHeight, 2)}%`,
-                        backgroundColor: "var(--color-primary)",
-                        borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
-                        minHeight: "4px",
+                        position: "absolute",
+                        top: "205px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "2px",
+                        width: "100%",
                       }}
-                    />
+                    >
+                      <p
+                        className="text-body-sm text-muted"
+                        style={{ fontSize: "10px", margin: 0, textTransform: "uppercase" }}
+                      >
+                        {new Date(day.date).toLocaleDateString("en-US", {
+                          weekday: "short",
+                        })}
+                      </p>
+                      <p className="text-body-sm" style={{ fontSize: "11px", margin: 0, fontWeight: 600, color: "var(--color-ink)" }}>
+                        {(day.primary + day.secondary).toFixed(3)}
+                      </p>
+                    </div>
                   </div>
-                  <p
-                    className="text-body-sm text-muted"
-                    style={{ fontSize: "10px", margin: 0, textTransform: "uppercase" }}
-                  >
-                    {new Date(day.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                    })}
-                  </p>
-                  <p className="text-body-sm" style={{ fontSize: "10px", margin: 0, fontWeight: 600 }}>
-                    {(day.primary + day.secondary).toFixed(3)}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
           <div style={{ display: "flex", gap: "var(--space-xl)", justifyContent: "center", marginTop: "var(--space-md)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)" }}>

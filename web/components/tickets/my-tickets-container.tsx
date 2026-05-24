@@ -153,12 +153,12 @@ export function MyTicketsContainer({ tickets }: MyTicketsContainerProps) {
           }}
         >
           <p style={{ fontSize: "1.2rem", fontWeight: "600", color: "var(--color-ink)" }}>
-            Không có vé nào trong mục này
+            No tickets found in this section
           </p>
           <p style={{ fontSize: "0.9rem", marginTop: "8px", maxWidth: "400px", margin: "8px auto 0" }}>
-            {activeTab === "upcoming" && "Bạn chưa có vé nào sắp diễn ra. Khám phá sự kiện ngay để sở hữu tấm vé đầu tiên!"}
-            {activeTab === "past" && "Những chiếc vé đã sử dụng hoặc hết hạn sẽ được hiển thị ở đây như những kỷ niệm đẹp."}
-            {activeTab === "listed" && "Các vé đang được niêm yết bán trên Marketplace để tìm chủ nhân mới."}
+            {activeTab === "upcoming" && "You don't have any upcoming tickets yet. Explore events now to grab your first ticket!"}
+            {activeTab === "past" && "Used or expired tickets will be displayed here as digital collectibles."}
+            {activeTab === "listed" && "Tickets currently listed for sale on the Marketplace will appear here."}
           </p>
           {activeTab === "upcoming" && (
             <Link
@@ -166,7 +166,7 @@ export function MyTicketsContainer({ tickets }: MyTicketsContainerProps) {
               className="btn-primary"
               style={{ display: "inline-flex", marginTop: "20px", padding: "8px 24px" }}
             >
-              Khám phá sự kiện
+              Explore Events
             </Link>
           )}
         </div>

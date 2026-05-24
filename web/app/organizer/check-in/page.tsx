@@ -83,6 +83,28 @@ export default function CheckInPage() {
   const [autoResume, setAutoResume] = useState(true);
   const [secondsLeft, setSecondsLeft] = useState(0);
 
+  const [history, setHistory] = useState<TicketDetails[]>([]);
+  const [historySearch, setHistorySearch] = useState("");
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch("/api/organizer/check-in-history");
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.data || []);
+      }
+    } catch (e) {
+      console.error("Error fetching check-in history:", e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
   const handleScan = async (decodedText: string) => {
     if (isProcessing) return;
     setIsProcessing(true);
@@ -96,7 +118,7 @@ export default function CheckInPage() {
         !payload.eventId ||
         payload.tokenId === undefined
       ) {
-        throw new Error("Mã QR không đúng định dạng. Vui lòng quét mã QR động bảo mật.");
+        throw new Error("Invalid QR code format. Please scan a secure dynamic QR code.");
       }
 
       const response = await fetch("/api/tickets/check-in", {
@@ -109,7 +131,7 @@ export default function CheckInPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errMsg = data.error || "Check-in thất bại.";
+        const errMsg = data.error || "Check-in failed.";
         let errorType: "EXPIRED" | "SIGNATURE" | "USED" | "PERMISSION" | "OTHER" = "OTHER";
         
         if (errMsg.includes("hết hạn") || errMsg.includes("expired")) {
@@ -134,8 +156,14 @@ export default function CheckInPage() {
       playFeedbackSound("success");
       setResult({
         success: true,
-        message: `Vé #${data.ticket.tokenId} hợp lệ!`,
+        message: `Ticket #${data.ticket.tokenId} is valid!`,
         ticket: data.ticket,
+      });
+
+      // Update local history log safely
+      setHistory((prev) => {
+        if (prev.some((t) => t.id === data.ticket.id)) return prev;
+        return [data.ticket, ...prev];
       });
     } catch (error) {
       playFeedbackSound("error");
@@ -144,7 +172,7 @@ export default function CheckInPage() {
         message:
           error instanceof Error
             ? error.message
-            : "Lỗi giải mã QR hoặc kết nối mạng.",
+            : "Failed to decode QR or network error.",
         errorType: "OTHER",
       });
     } finally {
@@ -210,13 +238,13 @@ export default function CheckInPage() {
                 marginBottom: "var(--space-sm)"
               }}
             >
-              Hệ thống Kiểm Soát Vé
+              Check-in System
             </div>
             <h1 className="text-display-lg" style={{ color: "var(--color-ink)", fontWeight: "700", margin: "0 0 var(--space-xs) 0" }}>
-              Cổng Check-in Vé NFT
+              NFT Ticket Check-in Gate
             </h1>
             <p className="text-body-md text-muted" style={{ color: "var(--color-mute)", margin: 0 }}>
-              Kiểm duyệt vé tự động qua camera. Đọc kết quả xác minh tức thời mà không cần rời mắt khỏi cổng soát vé.
+              Automated ticket validation via camera scanner. Read results instantly in real-time.
             </p>
           </header>
 
@@ -253,14 +281,14 @@ export default function CheckInPage() {
                     margin: "0 0 var(--space-xs) 0"
                   }}
                 >
-                  Trình Quét Camera
+                  Camera Scanner
                 </p>
                 <p style={{ fontSize: "0.85rem", color: "var(--color-mute)", margin: 0 }}>
                   {isProcessing 
-                    ? "⏳ Đang đọc thông tin vé..." 
+                    ? "⏳ Reading ticket info..." 
                     : result 
-                      ? "⏸️ Đang dừng để xem kết quả" 
-                      : "📷 Đang hoạt động, quét mã QR..."}
+                      ? "⏸️ Paused to view result" 
+                      : "📷 Active, scanning QR code..."}
                 </p>
               </div>
 
@@ -332,7 +360,7 @@ export default function CheckInPage() {
                       borderRadius: "50%",
                       animation: "spin 0.8s linear infinite"
                     }}/>
-                    <span>Đang giải mã...</span>
+                    <span>Decoding...</span>
                   </div>
                 ) : result ? (
                   <button 
@@ -340,12 +368,12 @@ export default function CheckInPage() {
                     onClick={resetScanner}
                     style={{ fontSize: "0.85rem", padding: "6px 14px" }}
                   >
-                    ▶ Tiếp tục quét
+                    ▶ Resume Scanning
                   </button>
                 ) : (
                   <span style={{ fontSize: "0.85rem", color: "var(--color-primary)", display: "flex", alignItems: "center", gap: "6px", fontWeight: "600" }}>
                     <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-success-deep)", animation: "pulse 1.5s infinite" }}/>
-                    Sẵn sàng quét
+                    Ready to scan
                   </span>
                 )}
               </div>
@@ -386,10 +414,10 @@ export default function CheckInPage() {
                     🎫
                   </div>
                   <h3 style={{ fontSize: "1.2rem", fontWeight: "600", color: "var(--color-ink)", margin: "0 0 var(--space-xs) 0" }}>
-                    Chưa Có Lượt Quét
+                    No Scans Yet
                   </h3>
                   <p style={{ fontSize: "0.9rem", color: "var(--color-mute)", maxWidth: "280px", margin: 0 }}>
-                    Đưa mã QR trên ứng dụng của khách trước camera để kiểm tra trạng thái vé.
+                    Hold the attendee's dynamic QR code in front of the camera to verify their ticket.
                   </p>
                 </div>
               ) : isProcessing ? (
@@ -405,10 +433,10 @@ export default function CheckInPage() {
                     marginBottom: "var(--space-lg)"
                   }}/>
                   <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--color-ink)", margin: "0 0 var(--space-xs) 0" }}>
-                    Đang Kiểm Tra Vé
+                    Verifying Ticket
                   </h3>
                   <p style={{ fontSize: "0.9rem", color: "var(--color-mute)", maxWidth: "280px", margin: 0 }}>
-                    Xác thực chữ ký số mã QR và trạng thái on-chain...
+                    Validating cryptographic signature and on-chain status...
                   </p>
                 </div>
               ) : result ? (
@@ -446,7 +474,7 @@ export default function CheckInPage() {
                             textTransform: "uppercase"
                           }}
                         >
-                          {result.success ? "Hợp Lệ" : "Không Hợp Lệ"}
+                          {result.success ? "Valid" : "Invalid"}
                         </h2>
                         <p style={{ fontSize: "0.85rem", color: "var(--color-ink)", margin: 0 }}>
                           {result.message}
@@ -468,31 +496,31 @@ export default function CheckInPage() {
                         }}
                       >
                         <strong style={{ display: "block", color: "var(--color-ink)", marginBottom: "4px" }}>
-                          ⚠️ Xử lý sự cố:
+                          ⚠️ Troubleshooting:
                         </strong>
                         {result.errorType === "EXPIRED" && (
                           <span style={{ color: "var(--color-primary)" }}>
-                            Mã QR hết hạn. Yêu cầu khách bấm <strong>"Tải lại mã mới"</strong> trên ứng dụng vé để tạo mã QR có chữ ký mới.
+                            QR code expired. Ask the attendee to tap <strong>"Refresh Code"</strong> in their app to generate a fresh signed QR code.
                           </span>
                         )}
                         {result.errorType === "SIGNATURE" && (
                           <span style={{ color: "var(--color-error)" }}>
-                            Sai chữ ký số. Có thể mã QR là ảnh chụp màn hình hoặc vé giả mạo. Hãy từ chối check-in.
+                            Cryptographic signature mismatch. The QR code may be a screenshot or a fake ticket. Deny entry.
                           </span>
                         )}
                         {result.errorType === "USED" && (
                           <span style={{ color: "var(--color-error)" }}>
-                            Vé đã qua sử dụng trước đó. Vui lòng đối chiếu thời gian soát vé.
+                            Ticket has already been checked in. Please check prior check-in times.
                           </span>
                         )}
                         {result.errorType === "PERMISSION" && (
                           <span style={{ color: "var(--color-error)" }}>
-                            Bạn không có quyền soát vé cho sự kiện này.
+                            You do not have organizer permissions to check in attendees for this event.
                           </span>
                         )}
                         {result.errorType === "OTHER" && (
                           <span style={{ color: "var(--color-mute)" }}>
-                            Vui lòng kiểm tra lại mạng kết nối, làm mới trang của khách và quét lại.
+                            Please check network connection, ask attendee to refresh their page, and scan again.
                           </span>
                         )}
                       </div>
@@ -514,7 +542,7 @@ export default function CheckInPage() {
                       >
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", borderBottom: "1px solid var(--color-hairline)", paddingBottom: "10px" }}>
                           <div>
-                            <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>HẠNG VÉ</span>
+                            <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>TICKET TIER</span>
                             <strong style={{ fontSize: "0.9rem", color: "var(--color-accent-blue)" }}>
                               {result.ticket.tier.name}
                             </strong>
@@ -529,19 +557,19 @@ export default function CheckInPage() {
 
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                           <div>
-                            <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>KHÁCH HÀNG</span>
+                            <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>ATTENDEE</span>
                             <strong style={{ fontSize: "0.9rem", color: "var(--color-ink)" }}>
-                              {result.ticket.owner.name ?? "Chưa thiết lập"}
+                              {result.ticket.owner.name ?? "Not set"}
                             </strong>
                           </div>
                           <div>
                             <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>EMAIL</span>
                             <span style={{ fontSize: "0.85rem", color: "var(--color-ink-soft)", wordBreak: "break-all" }}>
-                              {result.ticket.owner.email ?? "Chưa thiết lập"}
+                              {result.ticket.owner.email ?? "Not set"}
                             </span>
                           </div>
                           <div>
-                            <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>ĐỊA CHỈ VÍ</span>
+                            <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", display: "block" }}>WALLET ADDRESS</span>
                             <span style={{ fontSize: "0.75rem", color: "var(--color-mute)", fontFamily: "monospace", wordBreak: "break-all" }}>
                               {result.ticket.owner.walletAddress}
                             </span>
@@ -556,18 +584,18 @@ export default function CheckInPage() {
                     {autoResume && secondsLeft > 0 ? (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--color-ink)" }}>
                         <span>
-                          🔄 Tự động quét tiếp trong <strong style={{ color: "var(--color-primary)" }}>{secondsLeft}s</strong>...
+                          🔄 Auto-resuming scan in <strong style={{ color: "var(--color-primary)" }}>{secondsLeft}s</strong>...
                         </span>
                         <button 
                           style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", fontSize: "0.8rem", padding: "0 4px", fontWeight: "600" }}
                           onClick={() => setAutoResume(false)}
                         >
-                          [Tạm dừng]
+                          [Pause]
                         </button>
                       </div>
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--color-mute)" }}>
-                        <span>Tự động quét đã tắt.</span>
+                        <span>Auto-resume is disabled.</span>
                         <button 
                           style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", fontSize: "0.8rem", padding: "0 4px", fontWeight: "600" }}
                           onClick={() => {
@@ -575,7 +603,7 @@ export default function CheckInPage() {
                             setSecondsLeft(5);
                           }}
                         >
-                          [Bật lại]
+                          [Enable]
                         </button>
                       </div>
                     )}
@@ -595,12 +623,155 @@ export default function CheckInPage() {
                         borderRadius: "var(--radius-md)",
                       }}
                     >
-                      Quét vé tiếp theo ngay
+                      Scan Next Ticket
                     </button>
                   </div>
                 </div>
               ) : null}
             </div>
+          </div>
+
+          {/* ── CHECK-IN HISTORY BLOCK ── */}
+          <div
+            style={{
+              width: "100%",
+              marginTop: "var(--space-xxl)",
+              backgroundColor: "var(--color-surface-card)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--color-hairline)",
+              boxShadow: "0 8px 30px rgba(0, 0, 0, 0.04)",
+              padding: "var(--space-lg)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "var(--space-md)",
+                marginBottom: "var(--space-lg)",
+                borderBottom: "1px solid var(--color-hairline)",
+                paddingBottom: "var(--space-md)",
+              }}
+            >
+              <div>
+                <h2 className="text-heading-lg" style={{ margin: 0, color: "var(--color-ink)", fontWeight: 700 }}>
+                  Recent Check-ins
+                </h2>
+                <p className="text-body-sm text-muted" style={{ margin: "4px 0 0 0" }}>
+                  Real-time entry logs for your events. Total checked in: <strong>{history.length}</strong>
+                </p>
+              </div>
+              
+              {/* Search filter input */}
+              <input
+                type="text"
+                placeholder="Search by name, email, token ID, or wallet..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-hairline)",
+                  backgroundColor: "var(--color-surface-soft)",
+                  color: "var(--color-ink)",
+                  fontSize: "14px",
+                  minWidth: "260px",
+                }}
+              />
+            </div>
+
+            {loadingHistory ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-xl) 0" }}>
+                <div className="spinner" style={{ width: "24px", height: "24px" }} />
+              </div>
+            ) : history.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "var(--space-xl) 0", color: "var(--color-mute)" }}>
+                No attendees checked in yet.
+              </div>
+            ) : history.filter((t) => {
+                const query = historySearch.toLowerCase();
+                return (
+                  t.owner.name?.toLowerCase().includes(query) ||
+                  t.owner.email?.toLowerCase().includes(query) ||
+                  t.owner.walletAddress.toLowerCase().includes(query) ||
+                  t.tokenId.toString().includes(query) ||
+                  t.event.title.toLowerCase().includes(query) ||
+                  t.tier.name.toLowerCase().includes(query)
+                );
+              }).length === 0 ? (
+              <div style={{ textAlign: "center", padding: "var(--space-xl) 0", color: "var(--color-mute)" }}>
+                No matching check-in records found.
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid var(--color-hairline)", color: "var(--color-mute)", textAlign: "left" }}>
+                      <th style={{ padding: "8px var(--space-sm)", fontWeight: 600 }}>Time</th>
+                      <th style={{ padding: "8px var(--space-sm)", fontWeight: 600 }}>Attendee</th>
+                      <th style={{ padding: "8px var(--space-sm)", fontWeight: 600 }}>Event / Tier</th>
+                      <th style={{ padding: "8px var(--space-sm)", fontWeight: 600, textAlign: "center" }}>Token ID</th>
+                      <th style={{ padding: "8px var(--space-sm)", fontWeight: 600, textAlign: "right" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history
+                      .filter((t) => {
+                        const query = historySearch.toLowerCase();
+                        return (
+                          t.owner.name?.toLowerCase().includes(query) ||
+                          t.owner.email?.toLowerCase().includes(query) ||
+                          t.owner.walletAddress.toLowerCase().includes(query) ||
+                          t.tokenId.toString().includes(query) ||
+                          t.event.title.toLowerCase().includes(query) ||
+                          t.tier.name.toLowerCase().includes(query)
+                        );
+                      })
+                      .map((item) => (
+                        <tr key={item.id} style={{ borderBottom: "1px solid var(--color-hairline)" }}>
+                          <td style={{ padding: "var(--space-sm) var(--space-sm)", color: "var(--color-mute)", whiteSpace: "nowrap" }}>
+                            {new Date(item.usedAt).toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            })}
+                          </td>
+                          <td style={{ padding: "var(--space-sm) var(--space-sm)" }}>
+                            <strong style={{ display: "block", color: "var(--color-ink)" }}>{item.owner.name || "Unnamed"}</strong>
+                            <span style={{ fontSize: "11px", color: "var(--color-mute)", display: "block" }}>{item.owner.email || "No email"}</span>
+                            <span style={{ fontSize: "10px", fontFamily: "monospace", color: "var(--color-mute)" }}>
+                              {item.owner.walletAddress.slice(0, 8)}...{item.owner.walletAddress.slice(-6)}
+                            </span>
+                          </td>
+                          <td style={{ padding: "var(--space-sm) var(--space-sm)" }}>
+                            <span style={{ display: "block", color: "var(--color-ink)", fontWeight: 500 }}>{item.event.title}</span>
+                            <span style={{ fontSize: "11px", color: "var(--color-primary)", fontWeight: 600 }}>{item.tier.name}</span>
+                          </td>
+                          <td style={{ padding: "var(--space-sm) var(--space-sm)", textAlign: "center", fontWeight: 600, color: "var(--color-success-deep)" }}>
+                            #{item.tokenId}
+                          </td>
+                          <td style={{ padding: "var(--space-sm) var(--space-sm)", textAlign: "right" }}>
+                            <span
+                              style={{
+                                padding: "4px 8px",
+                                borderRadius: "var(--radius-full)",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                backgroundColor: "var(--color-success-pale)",
+                                color: "var(--color-success-deep)",
+                              }}
+                            >
+                              ✓ Checked In
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 

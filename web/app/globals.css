@@ -561,7 +561,8 @@ select {
 }
 
 .nav-link {
-    font-size: 15px;
+    font-size: 16px;
+    font-weight: 500;
     color: var(--color-mute) !important;
     text-decoration: none;
     position: relative;
@@ -592,7 +593,7 @@ select {
 
 .nav-link-active {
     color: var(--color-ink) !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
 }
 
 .nav-link-active::after {

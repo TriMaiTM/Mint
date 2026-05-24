@@ -285,7 +285,7 @@ export default async function EventDetailPage({
         {/* ── Lịch trình sự kiện (Event Agenda) ── */}
         {event.agenda && event.agenda.length > 0 && (
           <section style={{ marginBottom: "var(--space-xxl)", borderTop: "1px solid var(--color-hairline)", paddingTop: "var(--space-xl)" }}>
-            <h2 className="text-heading-xl mb-lg">Lịch trình sự kiện</h2>
+            <h2 className="text-heading-xl mb-lg">Event Agenda</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "0", position: "relative", paddingLeft: "24px", borderLeft: "2px solid var(--color-hairline-soft)" }}>
               {event.agenda.map((item) => (
                 <div key={item.id} style={{ position: "relative", marginBottom: "var(--space-xl)" }}>
@@ -311,7 +311,7 @@ export default async function EventDetailPage({
                     </h3>
                     {item.speaker && (
                       <span className="chip" style={{ display: "inline-block", fontSize: "11px", padding: "2px 8px", marginTop: "var(--space-xs)" }}>
-                        Diễn giả: {item.speaker}
+                        Speaker: {item.speaker}
                       </span>
                     )}
                     {item.description && (
@@ -329,7 +329,7 @@ export default async function EventDetailPage({
         {/* ── Câu hỏi thường gặp (FAQs) ── */}
         {event.faqs && event.faqs.length > 0 && (
           <section style={{ marginBottom: "var(--space-xxl)", borderTop: "1px solid var(--color-hairline)", paddingTop: "var(--space-xl)" }}>
-            <h2 className="text-heading-xl mb-lg">Câu hỏi thường gặp (FAQ)</h2>
+            <h2 className="text-heading-xl mb-lg">Frequently Asked Questions (FAQ)</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
               {event.faqs.map((faq) => (
                 <details key={faq.id} className="card-feature-soft" style={{

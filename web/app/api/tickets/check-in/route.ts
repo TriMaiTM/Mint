@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     // --- Dynamic QR Code Signature Verification ---
     if (!timestamp || !signature) {
       return NextResponse.json(
-        { error: "Yêu cầu chữ ký xác thực ví và mốc thời gian để check-in bảo mật." },
+        { error: "Wallet verification signature and timestamp are required for secure check-in." },
         { status: 400 },
       );
     }
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     const timeDiff = Math.abs(nowSeconds - Number(timestamp));
     if (timeDiff > 60) {
       return NextResponse.json(
-        { error: "Mã QR đã hết hạn. Vui lòng yêu cầu khách hàng làm mới mã QR." },
+        { error: "QR code expired. Please ask the attendee to refresh their QR code." },
         { status: 400 },
       );
     }
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
 
     if (!isSignatureValid) {
       return NextResponse.json(
-        { error: "Chữ ký số không hợp lệ. Khách hàng quét mã QR không phải là chủ sở hữu vé." },
+        { error: "Invalid digital signature. The attendee scanning the QR code is not the ticket owner." },
         { status: 400 },
       );
     }

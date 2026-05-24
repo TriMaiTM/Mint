@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/admin", label: "Dashboard", exact: true, icon: "📊" },
   { href: "/admin/users", label: "Users", exact: false, icon: "👥" },
   { href: "/admin/events", label: "Events", exact: false, icon: "🎫" },
+  { href: "/admin/organizer-requests", label: "Requests", exact: false, icon: "📩" },
   { href: "/admin/settings", label: "Settings", exact: false, icon: "⚙️" },
 ];
 

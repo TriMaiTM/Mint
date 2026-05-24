@@ -68,6 +68,7 @@ export function ConnectWalletButton() {
     await signOut();
     setDropdownOpen(false);
     window.dispatchEvent(new Event("ticketnft-auth-changed"));
+    window.location.href = "/";
   }
 
   const handleCopyAddress = useCallback(async () => {

@@ -131,6 +131,18 @@ export default function OrganizerDashboardPage() {
 
   const { overview, revenueByEvent, tierStats, dailyRevenue } = analytics;
 
+  const maxRevenue = Math.max(
+    ...dailyRevenue.map((d) => d.revenue),
+    0.001
+  );
+  const yTicks = [
+    maxRevenue,
+    maxRevenue * 0.75,
+    maxRevenue * 0.5,
+    maxRevenue * 0.25,
+    0,
+  ];
+
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
@@ -204,56 +216,112 @@ export default function OrganizerDashboardPage() {
       {/* Daily Revenue Chart */}
       <section style={{ marginBottom: "var(--space-xxl)" }}>
         <h2 className="text-heading-lg mb-lg">Revenue (Last 7 Days)</h2>
-        <div className="card" style={{ padding: "var(--space-lg)", background: "var(--color-surface-soft)" }}>
+        <div className="card" style={{ padding: "var(--space-xl)", background: "var(--color-surface-soft)" }}>
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
-              gap: "var(--space-sm)",
-              height: "200px",
-              padding: "var(--space-md) 0",
+              height: "240px",
+              position: "relative",
             }}
           >
-            {dailyRevenue.map((day) => {
-              const maxRevenue = Math.max(
-                ...dailyRevenue.map((d) => d.revenue),
-                0.001
-              );
-              const height = (day.revenue / maxRevenue) * 100;
-              return (
-                <div
-                  key={day.date}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "var(--space-xs)",
-                  }}
-                >
+            {/* Y-Axis Labels */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                height: "200px",
+                paddingRight: "var(--space-md)",
+                borderRight: "1px solid var(--color-hairline)",
+                textAlign: "right",
+                width: "60px",
+                flexShrink: 0,
+                fontSize: "11px",
+                color: "var(--color-mute)",
+                fontFamily: "monospace",
+              }}
+            >
+              {yTicks.map((tick, idx) => (
+                <span key={idx}>{tick.toFixed(3)}</span>
+              ))}
+            </div>
+
+            {/* Bars Area */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "var(--space-md)",
+                height: "200px",
+                flex: 1,
+                paddingLeft: "var(--space-md)",
+                position: "relative",
+              }}
+            >
+              {/* Horizontal helper gridlines */}
+              <div style={{ position: "absolute", left: 0, right: 0, top: "25%", borderTop: "1px dashed var(--color-hairline)", opacity: 0.5, pointerEvents: "none" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, top: "50%", borderTop: "1px dashed var(--color-hairline)", opacity: 0.5, pointerEvents: "none" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, top: "75%", borderTop: "1px dashed var(--color-hairline)", opacity: 0.5, pointerEvents: "none" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, borderBottom: "1px solid var(--color-hairline)", opacity: 0.8, pointerEvents: "none" }} />
+
+              {dailyRevenue.map((day) => {
+                const height = (day.revenue / maxRevenue) * 100;
+                return (
                   <div
+                    key={day.date}
                     style={{
-                      width: "100%",
-                      height: `${Math.max(height, 2)}%`,
-                      backgroundColor: "var(--color-primary)",
-                      borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
-                      minHeight: "4px",
+                      flex: 1,
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      position: "relative",
+                      zIndex: 2,
                     }}
-                  />
-                  <p
-                    className="text-body-sm text-muted"
-                    style={{ fontSize: "10px", margin: 0 }}
                   >
-                    {new Date(day.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                    })}
-                  </p>
-                  <p className="text-body-sm" style={{ fontSize: "11px", margin: 0, fontWeight: 600 }}>
-                    {day.revenue.toFixed(3)}
-                  </p>
-                </div>
-              );
-            })}
+                    {/* The bar itself */}
+                    <div
+                      style={{
+                        width: "32px",
+                        height: `${Math.max(height, 2)}%`,
+                        backgroundColor: "var(--color-primary)",
+                        borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
+                        minHeight: "2px",
+                        transition: "height 0.3s ease",
+                        boxShadow: "0 2px 8px rgba(230, 0, 35, 0.2)",
+                      }}
+                      title={`${day.revenue.toFixed(4)} POL`}
+                    />
+                    
+                    {/* Labels below the axis line (absolutely positioned below the 200px boundary) */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "205px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "2px",
+                        width: "100%",
+                      }}
+                    >
+                      <p
+                        className="text-body-sm text-muted"
+                        style={{ fontSize: "10px", margin: 0 }}
+                      >
+                        {new Date(day.date).toLocaleDateString("en-US", {
+                          weekday: "short",
+                        })}
+                      </p>
+                      <p className="text-body-sm" style={{ fontSize: "11px", margin: 0, fontWeight: 600, color: "var(--color-ink)" }}>
+                        {day.revenue.toFixed(3)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

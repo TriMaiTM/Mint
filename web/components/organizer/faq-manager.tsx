@@ -35,11 +35,11 @@ export function FaqManager({ eventId }: FaqManagerProps) {
       if (res.ok && payload.data) {
         setFaqs(payload.data);
       } else {
-        toast(payload.error ?? "Lỗi khi tải danh sách FAQ", "error");
+        toast(payload.error ?? "Error loading FAQ list", "error");
       }
     } catch (err) {
       console.error(err);
-      toast("Lỗi kết nối mạng khi tải FAQ", "error");
+      toast("Network error while loading FAQ", "error");
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +48,7 @@ export function FaqManager({ eventId }: FaqManagerProps) {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!question.trim() || !answer.trim()) {
-      toast("Vui lòng điền đầy đủ câu hỏi và câu trả lời", "error");
+      toast("Please fill in both question and answer", "error");
       return;
     }
 
@@ -65,24 +65,24 @@ export function FaqManager({ eventId }: FaqManagerProps) {
 
       const payload = await res.json();
       if (res.ok && payload.data) {
-        toast("Thêm câu hỏi FAQ thành công!", "success");
+        toast("FAQ added successfully!", "success");
         setFaqs([...faqs, payload.data]);
         // Reset form
         setQuestion("");
         setAnswer("");
       } else {
-        toast(payload.error ?? "Lỗi khi tạo FAQ", "error");
+        toast(payload.error ?? "Error creating FAQ", "error");
       }
     } catch (err) {
       console.error(err);
-      toast("Lỗi kết nối mạng khi thêm FAQ", "error");
+      toast("Network error while adding FAQ", "error");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDelete(faqId: string) {
-    if (!confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) return;
+    if (!confirm("Are you sure you want to delete this FAQ?")) return;
 
     try {
       const res = await fetch(`/api/organizer/events/${eventId}/faq?faqId=${faqId}`, {
@@ -91,14 +91,14 @@ export function FaqManager({ eventId }: FaqManagerProps) {
 
       const payload = await res.json();
       if (res.ok) {
-        toast("Đã xóa câu hỏi FAQ!", "success");
+        toast("FAQ deleted successfully!", "success");
         setFaqs(faqs.filter((item) => item.id !== faqId));
       } else {
-        toast(payload.error ?? "Lỗi khi xóa FAQ", "error");
+        toast(payload.error ?? "Error deleting FAQ", "error");
       }
     } catch (err) {
       console.error(err);
-      toast("Lỗi kết nối mạng khi xóa FAQ", "error");
+      toast("Network error while deleting FAQ", "error");
     }
   }
 
@@ -106,15 +106,15 @@ export function FaqManager({ eventId }: FaqManagerProps) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "var(--space-xxl)" }}>
       {/* Creation Form */}
       <div className="card" style={{ padding: "var(--space-xl)" }}>
-        <h3 className="text-heading-lg mb-md">Thêm câu hỏi thường gặp (FAQ)</h3>
+        <h3 className="text-heading-lg mb-md">Add Frequently Asked Question (FAQ)</h3>
         <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
           <div>
             <label className="text-caption-md text-muted" style={{ display: "block", marginBottom: "var(--space-xs)" }}>
-              Câu hỏi (Ví dụ: "Sự kiện có bãi đỗ xe không?")
+              Question (e.g. "Is parking available at the venue?")
             </label>
             <input
               type="text"
-              placeholder="Tôi có thể hoàn vé hoặc chuyển nhượng cho người khác không?"
+              placeholder="Can I refund or transfer my ticket to someone else?"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               style={{
@@ -131,10 +131,10 @@ export function FaqManager({ eventId }: FaqManagerProps) {
 
           <div>
             <label className="text-caption-md text-muted" style={{ display: "block", marginBottom: "var(--space-xs)" }}>
-              Câu trả lời
+              Answer
             </label>
             <textarea
-              placeholder="Bạn không thể hoàn trả tiền mặt nhưng hoàn toàn có thể chuyển nhượng/tặng vé NFT trực tiếp trên trang 'Vé của tôi' thông qua ví điện tử MetaMask..."
+              placeholder="You cannot get a cash refund, but you can easily transfer or gift your NFT ticket directly from 'My Tickets' via MetaMask..."
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               rows={4}
@@ -157,19 +157,19 @@ export function FaqManager({ eventId }: FaqManagerProps) {
             disabled={isSubmitting}
             style={{ alignSelf: "flex-start", marginTop: "var(--space-xs)" }}
           >
-            {isSubmitting ? "Đang xử lý..." : "➕ Thêm FAQ"}
+            {isSubmitting ? "Adding..." : "➕ Add FAQ"}
           </button>
         </form>
       </div>
 
       {/* List */}
       <div className="card" style={{ padding: "var(--space-xl)" }}>
-        <h3 className="text-heading-lg mb-md">Danh sách FAQs hiện tại</h3>
+        <h3 className="text-heading-lg mb-md">Current FAQ List</h3>
 
         {isLoading ? (
-          <p className="text-body-md text-muted">Đang tải FAQ...</p>
+          <p className="text-body-md text-muted">Loading FAQs...</p>
         ) : faqs.length === 0 ? (
-          <p className="text-body-md text-muted">Chưa có câu hỏi thường gặp nào được thiết lập cho sự kiện này.</p>
+          <p className="text-body-md text-muted">No FAQs have been set up for this event yet.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
             {faqs.map((item) => (
@@ -201,7 +201,7 @@ export function FaqManager({ eventId }: FaqManagerProps) {
                     fontSize: "13px",
                   }}
                 >
-                  Xóa
+                  Delete
                 </button>
               </div>
             ))}

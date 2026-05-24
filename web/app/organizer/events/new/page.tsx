@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletAuth } from "@/hooks/use-wallet-auth";
 
@@ -51,6 +51,9 @@ export default function OrganizerCreateEventPage() {
     [user?.role],
   );
 
+  const [allowEventCreation, setAllowEventCreation] = useState(true);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
   const [form, setForm] = useState<CreatePayload>({
     title: "",
     description: "",
@@ -65,6 +68,26 @@ export default function OrganizerCreateEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/platform-config")
+      .then((res) => res.json())
+      .then((data) => {
+        if (active && data.success) {
+          setAllowEventCreation(data.config.allowEventCreation !== false);
+        }
+      })
+      .catch((err) => console.error("Error fetching config:", err))
+      .finally(() => {
+        if (active) {
+          setIsLoadingConfig(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function updateTier(index: number, patch: Partial<TierForm>) {
     setForm((value) => ({
@@ -130,10 +153,12 @@ export default function OrganizerCreateEventPage() {
   }
 
   /* ── Loading state ── */
-  if (isLoadingSession) {
+  if (isLoadingSession || isLoadingConfig) {
     return (
       <div style={{ textAlign: "center", padding: "var(--space-xxl) 0" }}>
-        <p className="text-body-md text-muted">Loading wallet session...</p>
+        <p className="text-body-md text-muted">
+          {isLoadingSession ? "Loading wallet session..." : "Loading configuration..."}
+        </p>
       </div>
     );
   }
@@ -175,6 +200,41 @@ export default function OrganizerCreateEventPage() {
             NFT sale on-chain from My Events.
           </p>
         </header>
+
+        {!allowEventCreation && (
+          <div
+            style={{
+              padding: "var(--space-md) var(--space-lg)",
+              backgroundColor: "rgba(239, 68, 68, 0.08)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "var(--radius-md)",
+              color: "var(--color-error)",
+              marginBottom: "var(--space-xl)",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-md)",
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0 }}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span className="text-body-strong">
+              New event creation is currently disabled by the system administrator.
+            </span>
+          </div>
+        )}
 
         <form onSubmit={onSubmit}>
           {/* ── Event Details Card ── */}
@@ -540,7 +600,7 @@ export default function OrganizerCreateEventPage() {
             <button
               className="btn-primary"
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !allowEventCreation}
               style={{ width: "100%", height: "48px" }}
             >
               {isSubmitting ? "Creating..." : "Create Event"}

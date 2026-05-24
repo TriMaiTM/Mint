@@ -221,3 +221,29 @@ model FAQ {
 
   event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
+
+model PlatformConfig {
+  id                        String   @id @default("global")
+  maintenanceMode           Boolean  @default(false)
+  allowEventCreation        Boolean  @default(true)
+  allowUserRegistration     Boolean  @default(true)
+  allowSecondaryMarketplace Boolean  @default(true)
+  blockedWallets            String[] @default([])
+  alertBannerText           String   @default("")
+  maxTickets                Int      @default(5)
+  updatedAt                 DateTime @updatedAt
+}
+
+model OrganizerRequest {
+  id                String   @id @default(cuid())
+  userId            String
+  userWalletAddress String
+  userName          String
+  orgName           String
+  email             String
+  website           String?
+  description       String
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

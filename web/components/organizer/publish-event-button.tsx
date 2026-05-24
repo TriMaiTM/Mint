@@ -36,10 +36,10 @@ export function PublishEventButton({
 
     try {
       if (contractAddress) {
-        throw new Error("Sự kiện đã được đưa lên blockchain rồi.");
+        throw new Error("Event has already been deployed on-chain.");
       }
       if (tiers.length === 0) {
-        throw new Error("Vui lòng thêm ít nhất một hạng vé trước khi publish.");
+        throw new Error("Please add at least one ticket tier before publishing.");
       }
 
       setLoadingMessage("Publishing to blockchain...");

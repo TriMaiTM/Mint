@@ -138,7 +138,7 @@ export function EventSettingsForm({
       {message && (
         <p
           style={{
-            marginBottom: "var(--space-4)",
+            marginBottom: "var(--space-md)",
             color: isError ? "var(--color-error)" : "var(--color-success-deep)",
           }}
         >
@@ -149,9 +149,9 @@ export function EventSettingsForm({
       <div
         style={{
           display: "flex",
-          gap: "var(--space-3)",
+          gap: "var(--space-md)",
           flexWrap: "wrap",
-          marginTop: "var(--space-4)",
+          marginTop: "var(--space-lg)",
         }}
       >
         <button

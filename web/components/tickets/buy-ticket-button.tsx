@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { encodeFunctionData, parseEther, parseEventLogs } from "viem";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { eventTicketNftAbi, mapLegacyTierNameToId } from "@/lib/contracts";
@@ -43,6 +43,33 @@ export function BuyTicketButton({
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+  useEffect(() => {
+    if (!address) {
+      setIsBlocked(false);
+      setIsLoadingConfig(false);
+      return;
+    }
+    let active = true;
+    fetch("/api/admin/platform-config")
+      .then((res) => res.json())
+      .then((data) => {
+        if (active && data.success && Array.isArray(data.config.blockedWallets)) {
+          const blocked = data.config.blockedWallets.map((w: string) => w.toLowerCase());
+          setIsBlocked(blocked.includes(address.toLowerCase()));
+        }
+      })
+      .catch((err) => console.error("Error reading config for buy button:", err))
+      .finally(() => {
+        if (active) setIsLoadingConfig(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [address]);
 
   // Coupon states
   const [couponInput, setCouponInput] = useState("");
@@ -106,7 +133,7 @@ export function BuyTicketButton({
 
       const payload = await response.json();
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "Không thể nhận vé miễn phí.");
+        throw new Error(payload.error ?? "Failed to claim free ticket.");
       }
 
       setLoadingMessage(null);
@@ -129,13 +156,13 @@ export function BuyTicketButton({
 
     try {
       if (!walletClient || !publicClient || !address) {
-        throw new Error("Vui lòng kết nối ví trước khi mua vé.");
+        throw new Error("Please connect your wallet before buying tickets.");
       }
       if (!eventContractAddress) {
-        throw new Error("Sự kiện chưa được đưa lên blockchain.");
+        throw new Error("Event has not been deployed on-chain yet.");
       }
       if (!organizerWalletAddress) {
-        throw new Error("Không tìm thấy địa chỉ ví của ban tổ chức.");
+        throw new Error("Organizer wallet address not found.");
       }
 
       const targetTierId = onchainTierId ?? mapLegacyTierNameToId(tierName);
@@ -178,7 +205,7 @@ export function BuyTicketButton({
 
       if (isDiscounted) {
         // Send native tokens directly to the organizer
-        setLoadingMessage("Vui lòng xác nhận giao dịch chuyển tiền trực tiếp trong MetaMask...");
+        setLoadingMessage("Please confirm direct payment transaction in MetaMask...");
         const sendAmount = couponData.discountedPrice.toString();
         txHash = await ethereum.request({
           method: "eth_sendTransaction",
@@ -193,7 +220,7 @@ export function BuyTicketButton({
         });
       } else {
         // Prepare metadata first on IPFS
-        setLoadingMessage("Đang chuẩn bị metadata vé trên IPFS...");
+        setLoadingMessage("Preparing ticket metadata on IPFS...");
         try {
           const prepareRes = await fetch("/api/tickets/prepare-metadata", {
             method: "POST",
@@ -211,7 +238,7 @@ export function BuyTicketButton({
         }
 
         // Encode function call for standard mint
-        setLoadingMessage("Vui lòng xác nhận giao dịch mua vé trong MetaMask...");
+        setLoadingMessage("Please confirm the ticket purchase transaction in MetaMask...");
         const callData = encodeFunctionData({
           abi: eventTicketNftAbi,
           functionName: "mint",
@@ -232,14 +259,14 @@ export function BuyTicketButton({
         });
       }
 
-      setLoadingMessage("Đang chờ xác nhận từ blockchain...");
+      setLoadingMessage("Waiting for blockchain confirmation...");
 
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
       });
 
       if (isDiscounted) {
-        setLoadingMessage("Đang hoàn tất cấp vé từ hệ thống...");
+        setLoadingMessage("Completing ticket issuance from server...");
         // Call server-side mint with txHash
         const response = await fetch("/api/tickets/mint", {
           method: "POST",
@@ -257,7 +284,7 @@ export function BuyTicketButton({
         };
 
         if (!response.ok || !payload.data) {
-          throw new Error(payload.error ?? "Không thể lưu thông tin vé sau khi thanh toán.");
+          throw new Error(payload.error ?? "Failed to save ticket details after payment.");
         }
       } else {
         // Parse TicketMinted event
@@ -274,7 +301,7 @@ export function BuyTicketButton({
         const tokenId = minted?.args?.tokenId ? Number(minted.args.tokenId) : undefined;
 
         if (!tokenId) {
-          throw new Error("Không thể xác nhận tokenId từ blockchain.");
+          throw new Error("Could not confirm tokenId from blockchain receipt.");
         }
 
         // Sync with DB
@@ -297,16 +324,16 @@ export function BuyTicketButton({
         };
 
         if (!response.ok || !payload.data) {
-          throw new Error(payload.error ?? "Không thể lưu thông tin vé.");
+          throw new Error(payload.error ?? "Failed to save ticket details.");
         }
       }
 
       setLoadingMessage(null);
-      setSuccess("Mua vé thành công! Đang chuyển hướng...");
+      setSuccess("Ticket purchased successfully! Redirecting...");
       setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       console.error("Buy ticket error:", error);
-      const raw = error instanceof Error ? error.message : "Không thể mua vé.";
+      const raw = error instanceof Error ? error.message : "Failed to purchase ticket.";
       setLoadingMessage(null);
       setError(raw);
     } finally {
@@ -323,7 +350,7 @@ export function BuyTicketButton({
         <div style={{ display: "flex", gap: "var(--space-xs)" }}>
           <input
             type="text"
-            placeholder="Mã giảm giá"
+            placeholder="Coupon code"
             value={couponInput}
             onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
             style={{
@@ -354,7 +381,7 @@ export function BuyTicketButton({
               cursor: "pointer",
             }}
           >
-            {isValidatingCoupon ? "..." : "Áp dụng"}
+            {isValidatingCoupon ? "..." : "Apply"}
           </button>
         </div>
       ) : (
@@ -388,7 +415,7 @@ export function BuyTicketButton({
               fontWeight: "bold",
             }}
           >
-            Gỡ
+            Remove
           </button>
         </div>
       )}
@@ -401,10 +428,10 @@ export function BuyTicketButton({
       {couponData && (
         <div style={{ fontSize: "0.9rem", color: "var(--color-text-body)" }}>
           {isFree ? (
-            <p style={{ color: "green", fontWeight: "bold", margin: 0 }}>Vé hoàn toàn miễn phí! 🎉</p>
+            <p style={{ color: "green", fontWeight: "bold", margin: 0 }}>Ticket is completely free! 🎉</p>
           ) : (
             <p style={{ margin: 0 }}>
-              Giá sau giảm: <strong>{couponData.discountedPrice.toFixed(4)} POL</strong> (Giảm {couponData.discountAmount.toFixed(4)} POL)
+              Discounted price: <strong>{couponData.discountedPrice.toFixed(4)} POL</strong> (Saved {couponData.discountAmount.toFixed(4)} POL)
             </p>
           )}
         </div>
@@ -416,24 +443,39 @@ export function BuyTicketButton({
           className="btn-primary"
           onClick={handleFreeMint}
           type="button"
-          disabled={isBuying}
-          style={{ width: "100%", backgroundColor: "green" }}
+          disabled={isBuying || isBlocked}
+          style={{
+            width: "100%",
+            backgroundColor: isBlocked ? "var(--color-text-muted)" : "green",
+            cursor: isBlocked ? "not-allowed" : "pointer",
+          }}
         >
-          {isBuying ? "Processing..." : "Claim Free Ticket"}
+          {isBlocked ? "Wallet Blocked" : isBuying ? "Processing..." : "Claim Free Ticket"}
         </button>
       ) : (
         <button
           className="btn-primary"
           onClick={handleBuy}
           type="button"
-          disabled={isBuying || !eventContractAddress}
-          style={{ width: "100%" }}
+          disabled={isBuying || !eventContractAddress || isBlocked}
+          style={{
+            width: "100%",
+            backgroundColor: isBlocked ? "rgba(239, 68, 68, 0.1)" : undefined,
+            border: isBlocked ? "1px solid var(--color-error)" : undefined,
+            color: isBlocked ? "var(--color-error)" : undefined,
+            cursor: isBlocked ? "not-allowed" : "pointer",
+          }}
         >
-          {isBuying ? "Processing..." : eventContractAddress ? "Buy Ticket" : "Not on sale"}
+          {isBlocked ? "Wallet Blocked" : isBuying ? "Processing..." : eventContractAddress ? "Buy Ticket" : "Not on sale"}
         </button>
       )}
 
       {/* Display messages */}
+      {isBlocked && (
+        <p style={{ marginTop: "var(--space-xs)", color: "var(--color-error)", fontSize: "0.85rem", fontWeight: "bold" }}>
+          Your wallet address is restricted from making purchases on this platform.
+        </p>
+      )}
       {error && (
         <p style={{ marginTop: "var(--space-xs)", color: "var(--color-error)", fontSize: "0.85rem" }}>
           {error}
