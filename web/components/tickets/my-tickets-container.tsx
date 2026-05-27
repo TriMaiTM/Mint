@@ -68,9 +68,9 @@ export function MyTicketsContainer({ tickets }: MyTicketsContainerProps) {
   const filteredTickets = getFilteredTickets();
 
   const tabItems = [
-    { id: "upcoming", label: "Sắp diễn ra", count: upcomingTickets.length },
-    { id: "past", label: "Lịch sử & Kỷ niệm", count: pastTickets.length },
-    { id: "listed", label: "Đang rao bán", count: listedTickets.length },
+    { id: "upcoming", label: "Upcoming", count: upcomingTickets.length },
+    { id: "past", label: "Past & Collectibles", count: pastTickets.length },
+    { id: "listed", label: "Listed", count: listedTickets.length },
   ];
 
   return (

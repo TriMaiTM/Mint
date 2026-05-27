@@ -126,7 +126,7 @@ export function PremiumTicketCard({ ticket }: PremiumTicketCardProps) {
         {/* Chips */}
         <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
           <span style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", padding: "2px 8px", borderRadius: "12px", color: "rgba(255,255,255,0.8)" }}>
-            Hạng: {ticket.tier.name}
+            Tier: {ticket.tier.name}
           </span>
           <span style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", padding: "2px 8px", borderRadius: "12px", color: "rgba(255,255,255,0.8)" }}>
             ID #{ticket.tokenId}
@@ -145,7 +145,7 @@ export function PremiumTicketCard({ ticket }: PremiumTicketCardProps) {
           }}
         >
           <div>
-            <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Địa điểm / Venue</p>
+            <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Venue</p>
             <p style={{ fontSize: "0.8rem", fontWeight: "600", color: "#ffffff", marginTop: "2px" }}>
               {ticket.event.venue ?? "TBA"}
             </p>
@@ -157,7 +157,7 @@ export function PremiumTicketCard({ ticket }: PremiumTicketCardProps) {
             </p>
           </div>
           <div>
-            <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Giá trị / Value</p>
+            <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Value</p>
             <p style={{ fontSize: "0.8rem", fontWeight: "600", color: "#ffffff", marginTop: "2px" }}>
               {Number(ticket.tier.price).toFixed(3)} POL
             </p>
@@ -235,10 +235,10 @@ export function PremiumTicketCard({ ticket }: PremiumTicketCardProps) {
             }}
           >
             <p style={{ fontSize: "0.85rem", fontWeight: "600", color: "#a855f7" }}>
-              Đang rao bán trên Chợ
+              Listed on Marketplace
             </p>
             <p style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", marginTop: "4px" }}>
-              Mã QR tạm ẩn khi vé đang được niêm yết bán.
+              QR code hidden while ticket is listed for sale.
             </p>
           </div>
         ) : (
@@ -282,7 +282,7 @@ export function PremiumTicketCard({ ticket }: PremiumTicketCardProps) {
                   letterSpacing: "0.1em",
                 }}
               >
-                USED / ĐÃ DÙNG
+                USED / CLAIMED
               </div>
             )}
 

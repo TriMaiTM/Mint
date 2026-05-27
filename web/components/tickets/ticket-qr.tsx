@@ -54,12 +54,12 @@ export function TicketQR({
 
   async function generateSignedQR() {
     if (!isConnected || !address) {
-      setError("Vui lòng kết nối ví để xác thực.");
+      setError("Please connect your wallet to authenticate.");
       return;
     }
 
     if (address.toLowerCase() !== ownerAddress.toLowerCase()) {
-      setError("Địa chỉ ví đang kết nối không trùng khớp với chủ sở hữu vé.");
+      setError("Connected wallet address does not match the ticket owner.");
       return;
     }
 
@@ -87,7 +87,7 @@ export function TicketQR({
     } catch (err) {
       console.error("Signature failed:", err);
       setError(
-        err instanceof Error ? err.message : "Người dùng từ chối ký xác nhận quyền sở hữu."
+        err instanceof Error ? err.message : "User rejected ownership signature."
       );
       setShowQR(false);
     } finally {
@@ -114,7 +114,7 @@ export function TicketQR({
         type="button"
         style={{ width: "100%" }}
       >
-        {loading ? "Đang xác thực..." : showQR ? "Ẩn QR" : "Hiện QR bảo mật"}
+        {loading ? "Authenticating..." : showQR ? "Hide QR" : "Show Secure QR"}
       </button>
 
       {error && (
@@ -147,10 +147,10 @@ export function TicketQR({
                   color: timeLeft <= 10 ? "var(--color-error)" : "var(--color-accent-blue)",
                 }}
               >
-                Mã QR sẽ hết hạn sau: {timeLeft} giây
+                QR code will expire in: {timeLeft}s
               </p>
               <p className="text-caption-md text-muted">
-                Quét mã QR này tại cổng check-in. Mã sử dụng chữ ký ví để chống gian lận.
+                Scan this QR code at checkout. Uses cryptographic signature to prevent duplication.
               </p>
             </>
           ) : (
@@ -168,7 +168,7 @@ export function TicketQR({
               }}
             >
               <p className="text-body-sm" style={{ color: "var(--color-error)", fontWeight: "bold" }}>
-                Mã QR đã hết hạn
+                QR code has expired
               </p>
               <button
                 className="btn-primary mt-sm"
@@ -177,7 +177,7 @@ export function TicketQR({
                 type="button"
                 style={{ fontSize: "13px", padding: "6px 16px" }}
               >
-                Tải lại mã mới
+                Generate New QR
               </button>
             </div>
           )}
@@ -187,7 +187,7 @@ export function TicketQR({
               className="btn-primary"
               onClick={() => {
                 navigator.clipboard.writeText(qrPayload);
-                alert("Đã copy dữ liệu QR động (dùng để test Check-in)");
+                alert("Dynamic QR payload copied (used for testing check-in)");
               }}
               type="button"
               style={{ fontSize: "12px", padding: "6px 16px" }}

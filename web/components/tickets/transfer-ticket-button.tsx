@@ -42,26 +42,26 @@ export function TransferTicketButton({
 
   async function handleConfirm() {
     if (!address || !publicClient) {
-      setError("Vui lòng kết nối ví của bạn.");
+      setError("Please connect your wallet.");
       return;
     }
     const cleanToAddress = toAddress.trim();
     if (!isValidAddress) {
-      setError("Địa chỉ ví nhận không hợp lệ. Vui lòng nhập địa chỉ ví EVM hợp lệ (0x...).");
+      setError("Invalid recipient wallet address. Please enter a valid EVM address (0x...).");
       return;
     }
     if (cleanToAddress.toLowerCase() === address.toLowerCase()) {
-      setError("Bạn không thể tặng vé cho chính mình.");
+      setError("You cannot gift a ticket to yourself.");
       return;
     }
 
     setIsTransferring(true);
     setError(null);
-    setLoadingMessage("Đang gửi giao dịch tặng vé...");
+    setLoadingMessage("Sending ticket transfer transaction...");
 
     try {
       const ethereum = (window as any).ethereum;
-      if (!ethereum) throw new Error("Không tìm thấy MetaMask");
+      if (!ethereum) throw new Error("MetaMask not found");
 
       const transferData = encodeFunctionData({
         abi: eventTicketNftAbi,
@@ -85,10 +85,10 @@ export function TransferTicketButton({
         ],
       });
 
-      setLoadingMessage("Đang chờ xác nhận giao dịch trên blockchain...");
+      setLoadingMessage("Waiting for blockchain transaction confirmation...");
       await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-      setLoadingMessage("Đang đồng bộ thông tin vé...");
+      setLoadingMessage("Syncing ticket information...");
       const res = await fetch("/api/tickets/transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ export function TransferTicketButton({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Không thể cập nhật thông tin chuyển vé vào database");
+        throw new Error(data.error || "Failed to update ticket transfer details in the database");
       }
 
       setLoadingMessage(null);
@@ -110,7 +110,7 @@ export function TransferTicketButton({
       window.location.reload();
     } catch (err) {
       console.error("Transfer ticket error:", err);
-      setError(err instanceof Error ? err.message : "Chuyển vé thất bại");
+      setError(err instanceof Error ? err.message : "Ticket transfer failed");
     } finally {
       setIsTransferring(false);
       setLoadingMessage(null);
@@ -125,7 +125,7 @@ export function TransferTicketButton({
           onClick={openModal}
           style={{ width: "100%" }}
         >
-          Tặng vé
+          Gift Ticket
         </button>
       </div>
 
@@ -142,7 +142,7 @@ export function TransferTicketButton({
                 className="text-heading-lg"
                 style={{ color: "var(--color-ink)" }}
               >
-                Tặng vé NFT
+                Gift NFT Ticket
               </h3>
               <p
                 className="text-body-sm"
@@ -169,13 +169,13 @@ export function TransferTicketButton({
                 className="text-body-sm"
                 style={{ color: "var(--color-accent-orange, #e05624)", fontWeight: "bold" }}
               >
-                Cảnh báo quan trọng:
+                Important Warning:
               </p>
               <p
                 className="text-caption-md text-muted mt-xxs"
                 style={{ lineHeight: "1.4" }}
               >
-                Hành động này sẽ chuyển nhượng vĩnh viễn NFT vé này sang địa chỉ ví khác trên blockchain. Bạn sẽ không còn quyền sở hữu vé này nữa và hành động này không thể hoàn tác.
+                This action will permanently transfer this ticket NFT to another wallet address on the blockchain. You will no longer own this ticket, and this action cannot be undone.
               </p>
             </div>
 
@@ -187,7 +187,7 @@ export function TransferTicketButton({
                 className="text-body-sm-strong"
                 style={{ display: "block", marginBottom: "var(--space-sm)" }}
               >
-                Địa chỉ ví nhận (Address)
+                Recipient Wallet Address (0x...)
               </span>
               <input
                 type="text"
@@ -205,7 +205,7 @@ export function TransferTicketButton({
                     display: "block",
                   }}
                 >
-                  Địa chỉ ví nhận phải bắt đầu bằng 0x và có đúng 42 ký tự
+                  Recipient address must start with 0x and be exactly 42 characters
                 </span>
               )}
             </label>
@@ -237,7 +237,7 @@ export function TransferTicketButton({
                 disabled={isTransferring}
                 style={{ flex: 1 }}
               >
-                Hủy
+                Cancel
               </button>
               <button
                 className="btn-primary"
@@ -245,7 +245,7 @@ export function TransferTicketButton({
                 disabled={isTransferring || !isValidAddress}
                 style={{ flex: 1 }}
               >
-                {isTransferring ? "Đang xử lý..." : "Xác nhận gửi"}
+                {isTransferring ? "Processing..." : "Confirm Gift"}
               </button>
             </div>
           </div>

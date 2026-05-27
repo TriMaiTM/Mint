@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       if (seller?.email) {
         sendEmail({
           to: seller.email,
-          subject: `🎉 Ticket Sold - ${event.title}`,
+          subject: `Ticket Sold - ${event.title}`,
           html: generateSaleEmail({
             eventTitle: event.title,
             tierName: tier.name,
@@ -105,18 +105,18 @@ export async function POST(req: Request) {
       if (buyer?.email) {
         const eventDate = event.startDate
           ? new Date(event.startDate).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "TBD";
 
         sendEmail({
           to: buyer.email,
-          subject: `🎫 Ticket Purchased - ${event.title}`,
+          subject: `Ticket Purchased - ${event.title}`,
           html: generateTicketPurchaseEmail({
             eventTitle: event.title,
             tierName: tier.name,
@@ -133,15 +133,15 @@ export async function POST(req: Request) {
 
       createNotification(
         session.sub,
-        "Mua vé thành công 🛒",
-        `Bạn đã mua thành công vé hạng ${tier.name} của sự kiện "${event.title}" trên Chợ thứ cấp với giá ${Number(priceInPol).toFixed(3)} POL.`,
+        "Ticket Purchased Successfully 🛒",
+        `You have successfully purchased a ${tier.name} ticket for the event "${event.title}" on the Secondary Marketplace for ${Number(priceInPol).toFixed(3)} POL.`,
         "PURCHASE"
       ).catch((err) => console.error("Failed to create marketplace buyer notification:", err));
 
       createNotification(
         listing.sellerId,
-        "Đã bán vé thành công 💸",
-        `Vé hạng ${tier.name} của sự kiện "${event.title}" bạn đăng bán đã được mua với giá ${Number(priceInPol).toFixed(3)} POL.`,
+        "Ticket Sold Successfully",
+        `Your listing for a ${tier.name} ticket for the event "${event.title}" has been purchased for ${Number(priceInPol).toFixed(3)} POL.`,
         "SALE"
       ).catch((err) => console.error("Failed to create marketplace seller notification:", err));
     }

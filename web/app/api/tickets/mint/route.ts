@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     const metadataName = `${tier.event.title} - ${tier.name} #${expectedTokenId}`;
     const metadataDescription = `Vé NFT chính thức của sự kiện "${tier.event.title}". Hạng vé: ${tier.name}. Cung cấp quyền tham dự và xác thực on-chain.`;
     const eventUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/events/${tier.event.id}`;
-    
+
     const attributes = [
       { trait_type: "Sự kiện", value: tier.event.title },
       { trait_type: "Hạng vé", value: tier.name },
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
             tokenId = Number(decoded.args.tokenId);
             break;
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -340,8 +340,8 @@ export async function POST(request: NextRequest) {
     // Create in-app notification (non-blocking)
     createNotification(
       session.sub,
-      "Mua vé thành công 🎉",
-      `Bạn đã mua thành công vé hạng ${tier.name} cho sự kiện "${tier.event.title}". Mã vé: #${tokenId}.`,
+      "Ticket Purchased Successfully 🎉",
+      `You have successfully purchased a ${tier.name} ticket for the event "${tier.event.title}". Ticket ID: #${tokenId}.`,
       "PURCHASE"
     ).catch((err) => console.error("Failed to create purchase notification:", err));
 
@@ -349,18 +349,18 @@ export async function POST(request: NextRequest) {
     if (user.email) {
       const eventDate = tier.event.startDate
         ? new Date(tier.event.startDate).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
         : "TBD";
 
       sendEmail({
         to: user.email,
-        subject: `🎫 Ticket Confirmed - ${tier.event.title}`,
+        subject: `Ticket Confirmed - ${tier.event.title}`,
         html: generateTicketPurchaseEmail({
           eventTitle: tier.event.title,
           tierName: tier.name,

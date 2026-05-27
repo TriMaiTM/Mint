@@ -85,15 +85,15 @@ export async function POST(request: NextRequest) {
     // Trigger in-app notifications
     createNotification(
       session.sub,
-      "Đã tặng vé thành công 🎁",
-      `Bạn đã tặng thành công vé hạng ${ticket.tier.name} của sự kiện "${ticket.event.title}" cho ví ${cleanToAddress}.`,
+      "Ticket Gifted Successfully",
+      `You have successfully transferred a ${ticket.tier.name} ticket for the event "${ticket.event.title}" to wallet ${cleanToAddress}.`,
       "TRANSFER"
     ).catch((err) => console.error("Failed to create sender notification:", err));
 
     createNotification(
       recipient.id,
-      "Nhận được vé tặng 🎁",
-      `Bạn đã nhận được vé tặng hạng ${ticket.tier.name} của sự kiện "${ticket.event.title}" từ ví ${ticket.owner.walletAddress}.`,
+      "Ticket Received 🎁",
+      `You have received a ${ticket.tier.name} ticket for the event "${ticket.event.title}" from wallet ${ticket.owner.walletAddress}.`,
       "TRANSFER"
     ).catch((err) => console.error("Failed to create recipient notification:", err));
 

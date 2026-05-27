@@ -102,11 +102,11 @@ export function NotificationBell() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "Vừa xong";
-    if (diffMins < 60) return `${diffMins} phút trước`;
-    if (diffHours < 24) return `${diffHours} giờ trước`;
-    if (diffDays < 7) return `${diffDays} ngày trước`;
-    return date.toLocaleDateString("vi-VN", { month: "short", day: "numeric" });
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   // Modern modern line-art SVG icons in Ionicon style
@@ -287,7 +287,7 @@ export function NotificationBell() {
             }}
           >
             <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--color-ink)" }}>
-              Thông báo
+              Notifications
             </h4>
             {unreadCount > 0 && (
               <button
@@ -309,7 +309,7 @@ export function NotificationBell() {
                   e.currentTarget.style.textDecoration = "none";
                 }}
               >
-                Đánh dấu đã đọc
+                Mark all as read
               </button>
             )}
           </div>
@@ -331,7 +331,7 @@ export function NotificationBell() {
                 }}
               >
                 <div style={{ fontSize: "1.5rem", marginBottom: "8px" }}>🔔</div>
-                <p style={{ fontSize: "14px", margin: 0 }}>Không có thông báo nào</p>
+                <p style={{ fontSize: "14px", margin: 0 }}>No notifications yet</p>
               </div>
             ) : (
               notifications.map((item) => (
