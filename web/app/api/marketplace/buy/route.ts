@@ -7,6 +7,8 @@ import {
   generateSaleEmail,
   generateTicketPurchaseEmail,
 } from "@/lib/email";
+import { formatEther } from "viem";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   try {
@@ -125,6 +127,23 @@ export async function POST(req: Request) {
           }),
         }).catch((err) => console.error("Failed to send purchase email:", err));
       }
+
+      // Trigger in-app notifications
+      const priceInPol = formatEther(BigInt(listing.price));
+
+      createNotification(
+        session.sub,
+        "Mua vé thành công 🛒",
+        `Bạn đã mua thành công vé hạng ${tier.name} của sự kiện "${event.title}" trên Chợ thứ cấp với giá ${Number(priceInPol).toFixed(3)} POL.`,
+        "PURCHASE"
+      ).catch((err) => console.error("Failed to create marketplace buyer notification:", err));
+
+      createNotification(
+        listing.sellerId,
+        "Đã bán vé thành công 💸",
+        `Vé hạng ${tier.name} của sự kiện "${event.title}" bạn đăng bán đã được mua với giá ${Number(priceInPol).toFixed(3)} POL.`,
+        "SALE"
+      ).catch((err) => console.error("Failed to create marketplace seller notification:", err));
     }
 
     return NextResponse.json({ data: result });

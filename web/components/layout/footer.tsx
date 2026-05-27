@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useWalletAuth } from "@/hooks/use-wallet-auth";
 
 export function Footer() {
+  const { user, isAuthenticated } = useWalletAuth();
+  const isOrganizer = isAuthenticated && user?.role === "ORGANIZER";
+  const isAdmin = isAuthenticated && user?.role === "ADMIN";
+
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -39,6 +44,11 @@ export function Footer() {
               <Link href="/organizer" className="footer-link">
                 Organizer Dashboard
               </Link>
+              {isAuthenticated && !isOrganizer && !isAdmin && (
+                <Link href="/request-organizer" className="footer-link">
+                  Become Organizer
+                </Link>
+              )}
             </nav>
           </div>
 

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { sendEmail, generateTicketPurchaseEmail } from "@/lib/email";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -161,6 +162,14 @@ export async function POST(request: NextRequest) {
 
       return { order, ticket };
     });
+
+    // Create in-app notification (non-blocking)
+    createNotification(
+      session.sub,
+      "Mua vé thành công 🎉",
+      `Bạn đã mua thành công vé hạng ${tier.name} cho sự kiện "${tier.event.title}". Mã vé: #${onchainTokenId}.`,
+      "PURCHASE"
+    ).catch((err) => console.error("Failed to create purchase notification:", err));
 
     // Send email notification (non-blocking)
     if (user.email) {

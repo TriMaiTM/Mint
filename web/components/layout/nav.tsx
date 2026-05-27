@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button";
 import { useWalletAuth } from "@/hooks/use-wallet-auth";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -167,15 +168,7 @@ export function Nav() {
             );
           })}
 
-          {isAuthenticated && !isOrganizer && !isAdmin && (
-            <Link
-              href="/request-organizer"
-              className={pathname === "/request-organizer" ? "nav-link nav-link-active" : "nav-link"}
-              style={{ whiteSpace: "nowrap" }}
-            >
-              Become Organizer
-            </Link>
-          )}
+
 
           {isOrganizer && (
             <span
@@ -230,6 +223,7 @@ export function Nav() {
               Create Event
             </Link>
           )}
+          <NotificationBell />
           <ConnectWalletButton />
         </div>
       </div>

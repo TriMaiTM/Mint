@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { eventTicketNftAbi } from "@/lib/contracts";
 import { sendEmail, generateTicketPurchaseEmail } from "@/lib/email";
 import { uploadMetadataToIPFS } from "@/lib/pinata";
+import { createNotification } from "@/lib/notifications";
 
 /**
  * POST /api/tickets/mint
@@ -335,6 +336,14 @@ export async function POST(request: NextRequest) {
 
       return { order, ticket };
     });
+
+    // Create in-app notification (non-blocking)
+    createNotification(
+      session.sub,
+      "Mua vé thành công 🎉",
+      `Bạn đã mua thành công vé hạng ${tier.name} cho sự kiện "${tier.event.title}". Mã vé: #${tokenId}.`,
+      "PURCHASE"
+    ).catch((err) => console.error("Failed to create purchase notification:", err));
 
     // Send email notification (non-blocking)
     if (user.email) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +32,11 @@ export async function POST(request: NextRequest) {
     // Load ticket
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { owner: true },
+      include: {
+        owner: true,
+        event: { select: { title: true } },
+        tier: { select: { name: true } },
+      },
     });
 
     if (!ticket) {
@@ -76,6 +81,21 @@ export async function POST(request: NextRequest) {
         status: "CANCELLED",
       },
     });
+
+    // Trigger in-app notifications
+    createNotification(
+      session.sub,
+      "Đã tặng vé thành công 🎁",
+      `Bạn đã tặng thành công vé hạng ${ticket.tier.name} của sự kiện "${ticket.event.title}" cho ví ${cleanToAddress}.`,
+      "TRANSFER"
+    ).catch((err) => console.error("Failed to create sender notification:", err));
+
+    createNotification(
+      recipient.id,
+      "Nhận được vé tặng 🎁",
+      `Bạn đã nhận được vé tặng hạng ${ticket.tier.name} của sự kiện "${ticket.event.title}" từ ví ${ticket.owner.walletAddress}.`,
+      "TRANSFER"
+    ).catch((err) => console.error("Failed to create recipient notification:", err));
 
     return NextResponse.json({ data: updated });
   } catch (error) {
