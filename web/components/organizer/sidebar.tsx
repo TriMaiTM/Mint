@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/organizer", label: "Dashboard", exact: true, icon: "📊" },
-  { href: "/organizer/events", label: "My Events", exact: false, icon: "🎫" },
-  { href: "/organizer/check-in", label: "Check-in QR", exact: false, icon: "📷" },
+  { href: "/organizer", label: "Dashboard", exact: true },
+  { href: "/organizer/events", label: "My Events", exact: false },
+  { href: "/organizer/check-in", label: "Check-in QR", exact: false },
 ];
 
 export function OrganizerSidebar() {
@@ -68,7 +68,7 @@ export function OrganizerSidebar() {
               }}
               className="sidebar-link-hover"
             >
-              <span style={{ fontSize: "18px" }}>{link.icon}</span>
+              <span style={{ fontSize: "18px" }}></span>
               <span>{link.label}</span>
             </Link>
           );

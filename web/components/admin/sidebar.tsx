@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/admin", label: "Dashboard", exact: true, icon: "📊" },
-  { href: "/admin/users", label: "Users", exact: false, icon: "👥" },
-  { href: "/admin/events", label: "Events", exact: false, icon: "🎫" },
-  { href: "/admin/organizer-requests", label: "Requests", exact: false, icon: "📩" },
-  { href: "/admin/settings", label: "Settings", exact: false, icon: "⚙️" },
+  { href: "/admin", label: "Dashboard", exact: true },
+  { href: "/admin/users", label: "Users", exact: false },
+  { href: "/admin/events", label: "Events", exact: false },
+  { href: "/admin/organizer-requests", label: "Requests", exact: false },
+  { href: "/admin/settings", label: "Settings", exact: false },
 ];
 
 export function AdminSidebar() {
@@ -70,7 +70,7 @@ export function AdminSidebar() {
               }}
               className="sidebar-link-hover"
             >
-              <span style={{ fontSize: "18px" }}>{link.icon}</span>
+              <span style={{ fontSize: "18px" }}></span>
               <span>{link.label}</span>
             </Link>
           );
